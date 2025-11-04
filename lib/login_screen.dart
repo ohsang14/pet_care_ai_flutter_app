@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-
-import 'home_screen.dart';
+import 'member.dart';
+import 'main_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -14,45 +14,35 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   bool isLoginTabSelected = true;
 
-  // 추가: 각 입력창의 값을 가져오기 위한 컨트롤러
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
 
-  // 추가: 회원가입 API를 호출하는 함수
+  // 회원가입 함수
   Future<void> signUp() async {
-    // 안드로이드 에뮬레이터에서는 localhost 대신 10.0.2.2를 사용
     final url = Uri.parse('http://10.0.2.2:8080/api/members/join');
-
     try {
       final response = await http.post(
         url,
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
-          // 'name' 필드 추가
           'name': _nameController.text,
           'email': _emailController.text,
           'password': _passwordController.text,
         }),
       );
 
-      // 위젯이 아직 화면에 있는지 확인 후 UI 업데이트
       if (!mounted) return;
-
       if (response.statusCode == 200 || response.statusCode == 201) {
         print('회원가입 성공: ${response.body}');
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('회원가입에 성공했습니다! 로그인을 진행해주세요.')),
         );
-        // 성공 시 로그인 탭으로 전환
         setState(() {
           isLoginTabSelected = true;
         });
       } else {
         print('회원가입 실패: ${response.statusCode}');
-        print('응답 내용: ${response.body}');
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('회원가입에 실패했습니다. 다시 시도해주세요.')),
         );
@@ -66,9 +56,54 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  // 로그인 함수 (수정됨)
+  Future<void> login() async {
+    final url = Uri.parse('http://10.0.2.2:8080/api/members/login');
+    try {
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'email': _emailController.text,
+          'password': _passwordController.text,
+        }),
+      );
+
+      if (!mounted) return;
+
+      if (response.statusCode == 200) {
+        print('로그인 성공');
+
+        // 1. 서버가 보낸 JSON 문자열을 Dart 맵으로 변환 (한글 깨짐 방지)
+        final Map<String, dynamic> responseData =
+        jsonDecode(utf8.decode(response.bodyBytes));
+
+        // 2. 맵을 Member 객체로 변환
+        final Member loggedInMember = Member.fromJson(responseData);
+
+        // 3. MainScreen으로 이동할 때, 로그인한 사용자 정보를 함께 넘겨줌
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => MainScreen(member: loggedInMember),
+          ),
+        );
+      } else {
+        print('로그인 실패: ${response.body}');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('이메일 또는 비밀번호가 일치하지 않습니다.')),
+        );
+      }
+    } catch (e) {
+      print('로그인 에러: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('로그인 중 에러가 발생했습니다.')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    // 전체 UI 구조는 이전과 동일
     return Scaffold(
       backgroundColor: Colors.grey[900],
       body: SafeArea(
@@ -85,9 +120,14 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: Icon(Icons.favorite, color: Colors.white, size: 40),
                   ),
                   const SizedBox(height: 16),
-                  const Text('PetCare AI', style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
+                  const Text('PetCare AI',
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold)),
                   const SizedBox(height: 8),
-                  const Text('반려견의 건강한 삶을 위한 AI 파트너', style: TextStyle(color: Colors.white70, fontSize: 14)),
+                  const Text('반려견의 건강한 삶을 위한 AI 파트너',
+                      style: TextStyle(color: Colors.white70, fontSize: 14)),
                 ],
               ),
             ),
@@ -107,7 +147,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        const Text('환영합니다', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                        const Text('환영합니다',
+                            style: TextStyle(
+                                fontSize: 22, fontWeight: FontWeight.bold)),
                         const SizedBox(height: 24),
                         buildTabSwitcher(),
                         const SizedBox(height: 24),
@@ -128,7 +170,6 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Widget buildTabSwitcher() {
-    // ... 이전과 동일
     return Container(
       decoration: BoxDecoration(
         color: Colors.grey[200],
@@ -139,7 +180,9 @@ class _LoginScreenState extends State<LoginScreen> {
           Expanded(
             child: GestureDetector(
               onTap: () {
-                setState(() { isLoginTabSelected = true; });
+                setState(() {
+                  isLoginTabSelected = true;
+                });
               },
               child: Container(
                 padding: const EdgeInsets.symmetric(vertical: 12),
@@ -154,7 +197,9 @@ class _LoginScreenState extends State<LoginScreen> {
           Expanded(
             child: GestureDetector(
               onTap: () {
-                setState(() { isLoginTabSelected = false; });
+                setState(() {
+                  isLoginTabSelected = false;
+                });
               },
               child: Container(
                 padding: const EdgeInsets.symmetric(vertical: 12),
@@ -172,7 +217,6 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Widget buildLoginFields() {
-    // 수정: 로그인 필드에 맞게 수정 (이메일, 비밀번호)
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -182,7 +226,8 @@ class _LoginScreenState extends State<LoginScreen> {
         const SizedBox(height: 16),
         Text('비밀번호', style: TextStyle(color: Colors.grey[600])),
         const SizedBox(height: 8),
-        buildTextField('비밀번호를 입력하세요', obscureText: true, controller: _passwordController),
+        buildTextField('비밀번호를 입력하세요',
+            obscureText: true, controller: _passwordController),
         const SizedBox(height: 32),
         ElevatedButton(
           onPressed: login,
@@ -194,7 +239,6 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Widget buildSignupFields() {
-    // 수정: 회원가입 필드에 맞게 수정 (이름, 이메일, 비밀번호)
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -208,10 +252,10 @@ class _LoginScreenState extends State<LoginScreen> {
         const SizedBox(height: 16),
         Text('비밀번호', style: TextStyle(color: Colors.grey[600])),
         const SizedBox(height: 8),
-        buildTextField('비밀번호를 입력하세요', obscureText: true, controller: _passwordController),
+        buildTextField('비밀번호를 입력하세요',
+            obscureText: true, controller: _passwordController),
         const SizedBox(height: 32),
         ElevatedButton(
-          // 수정: onPressed에 signUp 함수 연결
           onPressed: signUp,
           style: buildButtonStyle(),
           child: const Text('회원가입', style: TextStyle(fontSize: 16)),
@@ -220,8 +264,8 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  // 수정: controller를 받을 수 있도록 파라미터 추가
-  Widget buildTextField(String hintText, {bool obscureText = false, TextEditingController? controller}) {
+  Widget buildTextField(String hintText,
+      {bool obscureText = false, TextEditingController? controller}) {
     return TextField(
       controller: controller,
       obscureText: obscureText,
@@ -237,41 +281,7 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-// 추가: 로그인 API를 호출하는 함수
-  Future<void> login() async {
-    final url = Uri.parse('http://10.0.2.2:8080/api/members/login');
-    try {
-      final response = await http.post(
-        url,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'email': _emailController.text,
-          'password': _passwordController.text,
-        }),
-      );
-
-      if (!mounted) return;
-
-      if (response.statusCode == 200) {
-        print('로그인 성공');
-        // 로그인 성공 시 홈 화면으로 이동 (뒤로가기 X)
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const HomeScreen()),
-        );
-      } else {
-        print('로그인 실패: ${response.body}');
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('이메일 또는 비밀번호가 일치하지 않습니다.')),
-        );
-      }
-    } catch (e) {
-      print('로그인 에러: $e');
-    }
-  }
-
   ButtonStyle buildButtonStyle() {
-    // ... 이전과 동일
     return ElevatedButton.styleFrom(
       backgroundColor: Colors.black,
       foregroundColor: Colors.white,
