@@ -1,3 +1,4 @@
+// lib/analysis_result_screen.dart
 import 'package:flutter/material.dart';
 import 'analysis_reslult.dart';
 
@@ -64,23 +65,65 @@ class AnalysisResultScreen extends StatelessWidget {
         padding: const EdgeInsets.all(24.0),
         child: Column(
           children: [
-            const Icon(Icons.pets, size: 60, color: Colors.blueAccent),
+            // --- 대표 이미지 표시 ---
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12.0),
+              // 이미지 URL이 유효한지 확인
+              child: (result.imageUrl != null && result.imageUrl!.isNotEmpty)
+                  ? Image.network(
+                // result.imageUrl!,
+                'https://placehold.co/150x150/EFEFEF/333333?text=Test',
+                height: 150,
+                width: 150,
+                fit: BoxFit.cover,
+                // 로딩 중 표시
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return Container(
+                    height: 150,
+                    width: 150,
+                    color: Colors.grey[200],
+                    child:
+                    const Center(child: CircularProgressIndicator()),
+                  );
+                },
+                // 에러 발생 시 (URL이 잘못되었거나, 네트워크 문제)
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    height: 150,
+                    width: 150,
+                    color: Colors.grey[200],
+                    child: const Icon(Icons.error,
+                        color: Colors.red, size: 60),
+                  );
+                },
+              )
+                  : Container(
+                // 이미지 URL이 null이거나 비어있을 때
+                height: 150,
+                width: 150,
+                color: Colors.grey[200],
+                child: const Icon(Icons.pets,
+                    size: 60, color: Colors.blueAccent),
+              ),
+            ),
             const SizedBox(height: 16),
             Text(
               '가장 유력한 품종은...',
               style: TextStyle(color: Colors.grey[600], fontSize: 16),
             ),
             const SizedBox(height: 8),
+            // --- 한국어 이름 표시 ---
             Text(
-              result.breedName,
+              result.breedNameKo, // 한국어 이름
               style: const TextStyle(
                 fontSize: 28,
                 fontWeight: FontWeight.bold,
                 color: Colors.black,
               ),
+              textAlign: TextAlign.center,
             ),
             const SizedBox(height: 16),
-            // 확률을 퍼센트로 표시
             Text(
               '${(result.score * 100).toStringAsFixed(1)}% 확률',
               style: const TextStyle(
@@ -102,8 +145,34 @@ class AnalysisResultScreen extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 8),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: ListTile(
+        // --- 대표 이미지 표시 ---
+        leading: ClipRRect(
+          borderRadius: BorderRadius.circular(8.0),
+          child: (result.imageUrl != null && result.imageUrl!.isNotEmpty)
+              ? Image.network(
+            result.imageUrl!,
+            height: 50,
+            width: 50,
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) {
+              return Container(
+                height: 50,
+                width: 50,
+                color: Colors.grey[700],
+                child: const Icon(Icons.pets, color: Colors.white60),
+              );
+            },
+          )
+              : Container(
+            height: 50,
+            width: 50,
+            color: Colors.grey[700],
+            child: const Icon(Icons.pets, color: Colors.white60),
+          ),
+        ),
+        // --- 한국어 이름 표시 ---
         title: Text(
-          result.breedName,
+          result.breedNameKo, // 한국어 이름
           style: const TextStyle(
             color: Colors.white,
             fontSize: 18,

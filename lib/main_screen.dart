@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'analysis_screen.dart';
 import 'home_screen.dart';
 import 'member.dart';
 
@@ -22,8 +23,8 @@ class _MainScreenState extends State<MainScreen> {
     super.initState();
     // 3. MainScreen이 받은 member 정보를 HomeScreen으로 넘겨주도록 설정
     _widgetOptions = <Widget>[
-      HomeScreen(member: widget.member), // 👈 여기!
-      const Center(child: Text('품종 분석 페이지')),
+      HomeScreen(member: widget.member),
+      const AnalysisScreen(),
       const Center(child: Text('건강 체크 페이지')),
       const Center(child: Text('마이 페이지')),
     ];
