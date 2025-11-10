@@ -71,8 +71,7 @@ class AnalysisResultScreen extends StatelessWidget {
               // 이미지 URL이 유효한지 확인
               child: (result.imageUrl != null && result.imageUrl!.isNotEmpty)
                   ? Image.network(
-                // result.imageUrl!,
-                'https://placehold.co/150x150/EFEFEF/333333?text=Test',
+                result.imageUrl!,
                 height: 150,
                 width: 150,
                 fit: BoxFit.cover,
@@ -89,6 +88,7 @@ class AnalysisResultScreen extends StatelessWidget {
                 },
                 // 에러 발생 시 (URL이 잘못되었거나, 네트워크 문제)
                 errorBuilder: (context, error, stackTrace) {
+                  print("IMAGE ERROR: ${error.toString()}");
                   return Container(
                     height: 150,
                     width: 150,
