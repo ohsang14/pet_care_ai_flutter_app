@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'analysis_screen.dart';
 import 'home_screen.dart';
 import 'member.dart';
+import 'analysis_screen.dart';
+import 'health_check_screen.dart'; // 👈 1. 새 화면 import (아직 파일은 없음)
 
 class MainScreen extends StatefulWidget {
-  // 1. MainScreen이 Member 객체를 받도록 생성자 수정
   final Member member;
   const MainScreen({super.key, required this.member});
 
@@ -14,18 +14,15 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
-
-  // 2. 화면 목록을 정적(static)이 아닌, 상태가 관리하는 리스트로 변경
   late final List<Widget> _widgetOptions;
 
   @override
   void initState() {
     super.initState();
-    // 3. MainScreen이 받은 member 정보를 HomeScreen으로 넘겨주도록 설정
     _widgetOptions = <Widget>[
       HomeScreen(member: widget.member),
       const AnalysisScreen(),
-      const Center(child: Text('건강 체크 페이지')),
+      HealthCheckScreen(member: widget.member), // 👈 2. 2번 인덱스(세 번째 탭) 수정
       const Center(child: Text('마이 페이지')),
     ];
   }
@@ -44,18 +41,22 @@ class _MainScreenState extends State<MainScreen> {
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(
             icon: Icon(Icons.home_outlined),
+            activeIcon: Icon(Icons.home),
             label: '홈',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.camera_alt_outlined),
+            activeIcon: Icon(Icons.camera_alt),
             label: '품종 분석',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.favorite_border),
+            icon: Icon(Icons.favorite_border), // 👈 '건강 체크' 탭 아이콘
+            activeIcon: Icon(Icons.favorite),
             label: '건강 체크',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person_outline),
+            activeIcon: Icon(Icons.person),
             label: '마이페이지',
           ),
         ],
