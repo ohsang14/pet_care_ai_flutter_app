@@ -1,9 +1,9 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'member.dart'; // 👈 'models/member.dart'가 아닌 'member.dart'로 가정
+import 'member.dart'; // 👈 [수정] 'models/member.dart' -> 'member.dart'
 import 'models/dog.dart';
-import 'health_history_screen.dart'; // (이 파일은 다음 단계에 확인합니다)
+import 'health_history_screen.dart';
 
 class HealthCheckScreen extends StatefulWidget {
   final Member member;

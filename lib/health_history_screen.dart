@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'health_result_screen.dart';
 import 'models/dog.dart';             // Dog 모델
 import 'models/health_check.dart';    // HealthCheck 모델
 import 'questionnaire_screen.dart'; // 👈 (다음 단계에 만들) 설문조사 화면
@@ -172,8 +173,15 @@ class _HealthHistoryScreenState extends State<HealthHistoryScreen> {
               style: const TextStyle(color: Colors.white70),
             ),
             trailing: const Icon(Icons.arrow_forward_ios, color: Colors.white54, size: 16),
-            onTap: () {
-              // TODO: (나중에 구현) 이 기록을 눌렀을 때 상세 결과 화면(HealthResultScreen)으로 이동
+            onTap: () {Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => HealthResultScreen(
+                  dog: widget.dog,
+                  pastCheck: check, // 👈 [핵심] 'pastCheck' 파라미터로 전달
+                ),
+              ),
+            );
             },
           ),
         );

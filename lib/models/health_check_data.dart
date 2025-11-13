@@ -66,7 +66,7 @@ List<QuestionnaireData> getQuestionnaireData() {
 
     // --- 질문 3: 소화기 상태 (구토 및 대변) ---
     QuestionnaireData(
-      icon: Icons.ac_unit, // (가상 아이콘, Icons.bolt 등 다른 것으로 대체 가능)
+      icon: Icons.warning_amber_rounded, // (가상 아이콘, Icons.bolt 등 다른 것으로 대체 가능)
       questionTitle: '소화기 상태',
       questionText: '반려견이 구토를 하거나, 대변 상태가 좋지 않나요?',
       options: [

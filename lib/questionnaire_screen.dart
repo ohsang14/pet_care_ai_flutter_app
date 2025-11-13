@@ -92,18 +92,23 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
       }
     }
 
-    // 8. HealthResultScreen으로 모든 데이터 전달
-    Navigator.pushReplacement( // '뒤로가기'로 설문조사로 못 돌아오게 Replacement 사용
+    Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => HealthResultScreen(
           dog: widget.dog,
           totalScore: totalScore,
           analysisItems: analysisItems,
-          allAnswerTexts: selectedAnswerTexts, // 5개 답변 텍스트 (Spring Boot 저장용)
+          allAnswerTexts: selectedAnswerTexts,
         ),
       ),
-    );
+    ).then((resultFromHealthResult) {
+      // 9. ⭐️ [추가] HealthResultScreen이 pop(true)로 닫혔다면,
+      //    그 'true' 값을 QuestionnaireScreen도 pop하여 HistoryScreen으로 전달
+      if (resultFromHealthResult == true) {
+        Navigator.pop(context, true);
+      }
+    });
   }
 
   @override

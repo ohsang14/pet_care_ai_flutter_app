@@ -1,24 +1,34 @@
 import 'dart:convert';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'models/dog.dart';
-import 'models/health_check_data.dart'; // HealthCheckResultItem
-import 'questionnaire_screen.dart'; // '다시 체크하기'용
+import 'models/health_check.dart';       // 👈 1. HealthCheck 모델 import
+import 'models/health_check_data.dart';
+import 'questionnaire_screen.dart';
 
 class HealthResultScreen extends StatefulWidget {
   final Dog dog;
-  final int totalScore; // 1. 설문조사에서 계산된 총점
-  final List<HealthCheckResultItem> analysisItems; // 2. 점수가 0보다 큰 '상세 분석' 항목
-  final List<String> allAnswerTexts; // 3. 5개 답변 텍스트 (서버 저장용)
+
+  // 2. '새로운 결과'를 받을 때 사용
+  final int? totalScore;
+  final List<HealthCheckResultItem>? analysisItems;
+  final List<String>? allAnswerTexts;
+
+  // 3. '과거 기록'을 받을 때 사용
+  final HealthCheck? pastCheck;
 
   const HealthResultScreen({
     super.key,
     required this.dog,
-    required this.totalScore,
-    required this.analysisItems,
-    required this.allAnswerTexts,
-  });
+    // 생성자를 유연하게 변경
+    this.totalScore,
+    this.analysisItems,
+    this.allAnswerTexts,
+    this.pastCheck,
+  }) : assert( // 👈 둘 중 하나는 반드시 값이 있어야 함
+  (totalScore != null && analysisItems != null && allAnswerTexts != null) || (pastCheck != null),
+  '새 결과 데이터 또는 과거 HealthCheck 객체 둘 중 하나는 제공되어야 합니다.'
+  );
 
   @override
   State<HealthResultScreen> createState() => _HealthResultScreenState();
@@ -27,41 +37,101 @@ class HealthResultScreen extends StatefulWidget {
 class _HealthResultScreenState extends State<HealthResultScreen> {
   bool _isLoading = false;
 
-  // Spring Boot 서버 URL (Android 에뮬레이터 기준)
+  // 4. 화면에 표시될 최종 데이터를 담을 상태 변수
+  late int _totalScore;
+  late List<HealthCheckResultItem> _analysisItems;
+  late List<String> _allAnswerTexts;
+  late bool _isViewingPastRecord; // '저장' 버튼 등을 숨기기 위한 플래그
+
   final String _baseUrl = "http://10.0.2.2:8080";
-  // (만약 iOS 또는 데스크탑을 사용 중이라면 "http://localhost:8080"로 변경)
 
-  // '결과 저장하기' 버튼 클릭 시
+  @override
+  void initState() {
+    super.initState();
+
+    // 5. 'pastCheck' 객체가 넘어왔는지 확인
+    if (widget.pastCheck != null) {
+      // --- 과거 기록 보기 모드 ---
+      _isViewingPastRecord = true;
+      _totalScore = widget.pastCheck!.totalScore;
+
+      // 'pastCheck' 객체에서 답변 목록을 재구성
+      _allAnswerTexts = [
+        widget.pastCheck!.answerStep1Appetite,
+        widget.pastCheck!.answerStep2Activity,
+        widget.pastCheck!.answerStep3Digestive,
+        widget.pastCheck!.answerStep4Urinary,
+        widget.pastCheck!.answerStep5Skin,
+      ];
+
+      // '상세 분석' 목록을 재구성 (점수가 0점 이상인 항목 찾기)
+      _analysisItems = _reconstructAnalysisItems(_allAnswerTexts);
+
+    } else {
+      // --- 새로운 결과 보기 모드 ---
+      _isViewingPastRecord = false;
+      _totalScore = widget.totalScore!;
+      _analysisItems = widget.analysisItems!;
+      _allAnswerTexts = widget.allAnswerTexts!;
+    }
+  }
+
+  // 6. [신규] 저장된 답변 텍스트를 기반으로 '상세 분석' 목록을 재구성하는 함수
+  List<HealthCheckResultItem> _reconstructAnalysisItems(List<String> answers) {
+    final List<QuestionnaireData> allQuestions = getQuestionnaireData();
+    List<HealthCheckResultItem> items = [];
+
+    for (int i = 0; i < allQuestions.length; i++) {
+      final String currentAnswerText = answers[i];
+      final QuestionnaireData questionData = allQuestions[i];
+
+      try {
+        // 'health_check_data.dart'에서 현재 답변과 일치하는 옵션을 찾음
+        final QuestionOption matchedOption = questionData.options.firstWhere(
+              (option) => option.text == currentAnswerText,
+        );
+
+        // 점수가 0보다 크면(나쁜 답변) '상세 분석' 리스트에 추가
+        if (matchedOption.score > 0) {
+          items.add(HealthCheckResultItem(
+            question: questionData.questionTitle,
+            answer: matchedOption.text,
+          ));
+        }
+      } catch (e) {
+        // (만약 health_check_data.dart의 문구를 수정해서 DB와 일치하지 않는 경우)
+        print('일치하는 답변 옵션을 찾을 수 없습니다: $currentAnswerText');
+      }
+    }
+    return items;
+  }
+
+  // '결과 저장하기' (수정 없음)
   Future<void> _saveResult() async {
-    setState(() {
-      _isLoading = true;
-    });
+    setState(() { _isLoading = true; });
 
-    // 1. API URL (POST /api/dogs/{dogId}/health-checks)
     final url = Uri.parse('$_baseUrl/api/dogs/${widget.dog.id}/health-checks');
 
     try {
-      // 2. Spring Boot의 HealthCheckRequestDto와 일치하는 JSON 본문 생성
       final response = await http.post(
         url,
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
-          'totalScore': widget.totalScore,
-          'answerStep1Appetite': widget.allAnswerTexts[0], // 1번 답변
-          'answerStep2Activity': widget.allAnswerTexts[1], // 2번 답변
-          'answerStep3Digestive': widget.allAnswerTexts[2], // 3번 답변
-          'answerStep4Urinary': widget.allAnswerTexts[3], // 4번 답변
-          'answerStep5Skin': widget.allAnswerTexts[4],    // 5번 답변
+          'totalScore': _totalScore, // 👈 상태 변수(_totalScore) 사용
+          'answerStep1Appetite': _allAnswerTexts[0],
+          'answerStep2Activity': _allAnswerTexts[1],
+          'answerStep3Digestive': _allAnswerTexts[2],
+          'answerStep4Urinary': _allAnswerTexts[3],
+          'answerStep5Skin': _allAnswerTexts[4],
         }),
       );
 
       if (!mounted) return;
 
-      if (response.statusCode == 201) { // 201 CREATED (저장 성공)
+      if (response.statusCode == 201) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('건강 기록이 성공적으로 저장되었습니다.')),
         );
-        // 3. 저장 성공 시, true 값을 반환하며 이전 화면(HealthHistoryScreen)으로 복귀
         Navigator.pop(context, true);
       } else {
         print('결과 저장 실패: ${response.body}');
@@ -78,16 +148,14 @@ class _HealthResultScreenState extends State<HealthResultScreen> {
       }
     } finally {
       if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
+        setState(() { _isLoading = false; });
       }
     }
   }
 
-  // '다시 체크하기' 버튼 클릭 시
+  // '다시 체크하기' (수정 없음)
   void _restartQuestionnaire() {
-    Navigator.pushReplacement( // 👈 현재 화면을 스택에서 제거하고 새 설문조사 시작
+    Navigator.pushReplacement(
       context,
       MaterialPageRoute(
         builder: (context) => QuestionnaireScreen(dog: widget.dog),
@@ -95,14 +163,13 @@ class _HealthResultScreenState extends State<HealthResultScreen> {
     );
   }
 
-  // 점수에 따른 '관찰 필요' 등 태그 반환
+  // (이하 점수/태그 관련 헬퍼 함수들은 수정 없음)
   String _getScoreTag(int score) {
     if (score <= 5) return '좋음';
     if (score <= 15) return '관찰 필요';
     return '병원 방문 권유';
   }
 
-  // 점수에 따른 태그 색상 반환
   Color _getScoreTagColor(int score) {
     if (score <= 5) return Colors.green;
     if (score <= 15) return Colors.orange;
@@ -111,16 +178,19 @@ class _HealthResultScreenState extends State<HealthResultScreen> {
 
   @override
   Widget build(BuildContext context) {
-    String scoreTag = _getScoreTag(widget.totalScore);
-    Color scoreColor = _getScoreTagColor(widget.totalScore);
+    // 7. widget.totalScore 대신 상태 변수 _totalScore 사용
+    String scoreTag = _getScoreTag(_totalScore);
+    Color scoreColor = _getScoreTagColor(_totalScore);
 
     return Scaffold(
       backgroundColor: Colors.grey[900],
       appBar: AppBar(
-        title: const Text('건강 체크 결과'),
+        // 8. 모드에 따라 제목 변경
+        title: Text(_isViewingPastRecord ? '과거 기록 상세' : '건강 체크 결과'),
         backgroundColor: Colors.grey[900],
         foregroundColor: Colors.white,
-        automaticallyImplyLeading: false, // 👈 뒤로가기 버튼 숨기기
+        // 9. '과거 기록' 모드일 때만 '뒤로가기' 버튼 표시
+        automaticallyImplyLeading: _isViewingPastRecord,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20.0),
@@ -129,6 +199,7 @@ class _HealthResultScreenState extends State<HealthResultScreen> {
           children: [
             // --- 1. 건강 점수 카드 ---
             Card(
+              // ... (내부는 _totalScore, scoreColor 등을 사용하므로 수정 없음) ...
               elevation: 4,
               color: Colors.white,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -145,7 +216,7 @@ class _HealthResultScreenState extends State<HealthResultScreen> {
                     const Text('건강 점수', style: TextStyle(fontSize: 18, color: Colors.grey)),
                     const SizedBox(height: 8),
                     Text(
-                      '${widget.totalScore}점',
+                      '${_totalScore}점', // 👈 상태 변수 사용
                       style: TextStyle(
                         fontSize: 36,
                         fontWeight: FontWeight.bold,
@@ -176,7 +247,8 @@ class _HealthResultScreenState extends State<HealthResultScreen> {
             // --- 2. 상세 분석 카드 ---
             _buildSectionCard(
               title: '상세 분석',
-              child: widget.analysisItems.isEmpty
+              // 10. _analysisItems 상태 변수 사용
+              child: _analysisItems.isEmpty
                   ? const Padding(
                 padding: EdgeInsets.only(bottom: 16.0),
                 child: Text(
@@ -185,7 +257,7 @@ class _HealthResultScreenState extends State<HealthResultScreen> {
                 ),
               )
                   : Column(
-                children: widget.analysisItems.map((item) {
+                children: _analysisItems.map((item) {
                   return _buildAnalysisItem(
                     question: item.question,
                     answer: item.answer,
@@ -199,40 +271,42 @@ class _HealthResultScreenState extends State<HealthResultScreen> {
             _buildSectionCard(
               title: '권장사항',
               child: Column(
-                children: _buildRecommendationItems(widget.totalScore),
+                children: _buildRecommendationItems(_totalScore), // 👈 상태 변수 사용
               ),
             ),
             const SizedBox(height: 40),
 
             // --- 4. 하단 버튼 ---
-            if (_isLoading)
-              const Center(child: CircularProgressIndicator())
-            else
-              ElevatedButton(
-                onPressed: _saveResult, // 👈 저장 함수 연결
+            // 11. [핵심] '과거 기록' 모드가 아닐 때만 버튼들 표시
+            if (!_isViewingPastRecord)
+              _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : ElevatedButton(
+                onPressed: _saveResult,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blueAccent, // 저장 버튼
+                  backgroundColor: Colors.blueAccent,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
                 child: const Text('결과 저장하기', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               ),
-            const SizedBox(height: 12),
-            TextButton(
-              onPressed: _restartQuestionnaire, // 👈 다시 체크하기 함수 연결
-              child: const Text(
-                '다시 체크하기',
-                style: TextStyle(color: Colors.white70, fontSize: 16),
+            if (!_isViewingPastRecord)
+              TextButton(
+                onPressed: _restartQuestionnaire,
+                child: const Text(
+                  '다시 체크하기',
+                  style: TextStyle(color: Colors.white70, fontSize: 16),
+                ),
               ),
-            ),
           ],
         ),
       ),
     );
   }
 
-  // '상세 분석', '권장사항' 섹션 카드 UI
+  // (이하 _buildSectionCard, _buildAnalysisItem, _buildRecommendationItems 헬퍼 함수들은 수정 없음)
+
   Widget _buildSectionCard({required String title, required Widget child}) {
     return Card(
       color: Colors.grey[800],
@@ -258,7 +332,6 @@ class _HealthResultScreenState extends State<HealthResultScreen> {
     );
   }
 
-  // '상세 분석'의 각 항목 UI (피그마 2, 3번)
   Widget _buildAnalysisItem({required String question, required String answer}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16.0),
@@ -272,12 +345,12 @@ class _HealthResultScreenState extends State<HealthResultScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  question, // 예: "식욕 및 음수량"
+                  question,
                   style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w500),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  answer, // 예: "평소보다 적게 먹어요"
+                  answer,
                   style: const TextStyle(color: Colors.white70, fontSize: 15),
                 ),
               ],
@@ -288,7 +361,6 @@ class _HealthResultScreenState extends State<HealthResultScreen> {
     );
   }
 
-  // 점수에 따른 '권장사항' 목록 반환
   List<Widget> _buildRecommendationItems(int score) {
     List<String> recommendations = [];
 
@@ -300,7 +372,7 @@ class _HealthResultScreenState extends State<HealthResultScreen> {
     } else if (score <= 15) {
       recommendations.add('증상이 지속되는지 주의 깊게 관찰하세요.');
       recommendations.add('응급 상황에 대비해 병원 연락처를 준비하세요.');
-      if (widget.analysisItems.length > 1) {
+      if (_analysisItems.length > 1) { // 👈 widget.analysisItems -> _analysisItems
         recommendations.add('여러 항목에서 이상 징후가 보입니다. 24시간 내 증상이 나아지지 않으면 병원 방문을 권장합니다.');
       }
     } else {
