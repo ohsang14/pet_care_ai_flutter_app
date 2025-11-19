@@ -1,15 +1,13 @@
-// lib/home_screen.dart
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'member.dart';
 import 'add_dog_screen.dart';
+import 'dog_detail_screen.dart';
+import 'member.dart';
 import 'models/dog.dart';
 
-// 2. StatelessWidget에서 StatefulWidget으로 변경
 class HomeScreen extends StatefulWidget {
   final Member member;
-
   const HomeScreen({super.key, required this.member});
 
   @override
@@ -17,40 +15,38 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  // 3. 서버에서 받아온 반려견 목록을 저장할 리스트
   List<Dog> _dogList = [];
-
-  // 4. 데이터를 불러오는 중인지 상태를 관리할 변수
   bool _isLoading = true;
 
-  // 5. 화면이 처음 로드될 때 실행되는 함수
+  // 안드로이드 에뮬레이터 기준
+  final String _baseUrl = "http://10.0.2.2:8080";
+  // (데스크탑: "http://localhost:8080")
+
   @override
   void initState() {
     super.initState();
-    // 반려견 목록을 불러오는 함수를 호출
     _fetchDogs();
   }
 
-  // 6. 서버에서 반려견 목록을 불러오는 API 호출 함수
   Future<void> _fetchDogs() async {
-    // 7. 우리가 Postman에서 테스트한 GET API 주소
-    final url = Uri.parse(
-      'http://10.0.2.2:8080/api/members/${widget.member.id}/dogs',
-    );
+    setState(() {
+      _isLoading = true;
+    });
+
+    final url = Uri.parse('$_baseUrl/api/members/${widget.member.id}/dogs');
     try {
       final response = await http.get(url);
 
+      if (!mounted) return;
+
       if (response.statusCode == 200) {
-        // 8. 성공 시, JSON 데이터를 List<Dog>로 변환
-        final List<dynamic> responseData = jsonDecode(
-          utf8.decode(response.bodyBytes),
-        );
+        final List<dynamic> responseData =
+        jsonDecode(utf8.decode(response.bodyBytes));
         setState(() {
           _dogList = responseData.map((data) => Dog.fromJson(data)).toList();
-          _isLoading = false; // 로딩 완료
+          _isLoading = false;
         });
       } else {
-        // 9. 실패 시
         print('반려견 목록 로드 실패: ${response.statusCode}');
         setState(() {
           _isLoading = false;
@@ -58,11 +54,27 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     } catch (e) {
       print('반려견 목록 로드 에러: $e');
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
+
+  void _navigateToAddDog() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AddDogScreen(member: widget.member),
+      ),
+    ).then((result) {
+      if (result == true) {
+        _fetchDogs();
+      }
+    });
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -75,14 +87,12 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // 환영 헤더
                 Text(
                   '안녕하세요, ${widget.member.name}님! 👋',
                   style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 26,
-                    fontWeight: FontWeight.bold,
-                  ),
+                      color: Colors.white,
+                      fontSize: 26,
+                      fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
                 const Text(
@@ -90,18 +100,10 @@ class _HomeScreenState extends State<HomeScreen> {
                   style: TextStyle(color: Colors.white70, fontSize: 16),
                 ),
                 const SizedBox(height: 30),
-
-                // 빠른 기능 카드
                 _buildQuickActionsCard(context),
-
                 const SizedBox(height: 30),
-
-                // 내 반려견 헤더
                 _buildMyDogsHeader(context),
-
                 const SizedBox(height: 20),
-
-                // 10. 반려견 목록
                 _buildDogList(),
               ],
             ),
@@ -112,6 +114,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildQuickActionsCard(BuildContext context) {
+    // ... (수정 사항 없음) ...
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -145,11 +148,15 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildActionButton(BuildContext context, IconData icon, String label) {
+  Widget _buildActionButton(
+      BuildContext context, IconData icon, String label) {
+    // ... (수정 사항 없음) ...
     return Column(
       children: [
         InkWell(
-          onTap: () {},
+          onTap: () {
+            // TODO: '품종 분석' 또는 '건강 체크' 탭으로 이동
+          },
           child: Container(
             width: 70,
             height: 70,
@@ -167,39 +174,20 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildMyDogsHeader(BuildContext context) {
+    // ... (수정 사항 없음) ...
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         const Text(
           '내 반려견',
           style: TextStyle(
-            color: Colors.white,
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
-          ),
+              color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
         ),
         TextButton.icon(
-          onPressed: () {
-            // '+ 추가' 버튼 클릭 시 AddDogScreen으로 이동 후,
-            // 화면이 다시 돌아왔을 때 목록을 새로고침(_fetchDogs)함
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => AddDogScreen(member: widget.member),
-              ),
-            ).then((_) {
-              // 11. 등록 화면에서 돌아왔을 때 목록 새로고침
-              setState(() {
-                _isLoading = true; // 로딩 상태로 변경
-              });
-              _fetchDogs();
-            });
-          },
+          onPressed: _navigateToAddDog,
           icon: const Icon(Icons.add, color: Colors.white),
-          label: const Text(
-            '추가',
-            style: TextStyle(color: Colors.white, fontSize: 16),
-          ),
+          label:
+          const Text('추가', style: TextStyle(color: Colors.white, fontSize: 16)),
           style: TextButton.styleFrom(
             backgroundColor: Colors.white.withOpacity(0.2),
             shape: RoundedRectangleBorder(
@@ -211,17 +199,14 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // 12. 반려견 목록 위젯
   Widget _buildDogList() {
     if (_isLoading) {
-      // 로딩 중일 때
       return const Center(
-        child: CircularProgressIndicator(color: Colors.white),
-      );
+          child: CircularProgressIndicator(color: Colors.white));
     }
 
     if (_dogList.isEmpty) {
-      // 목록이 비어있을 때
+      // ... (수정 사항 없음) ...
       return Container(
         padding: const EdgeInsets.symmetric(vertical: 40),
         decoration: BoxDecoration(
@@ -238,14 +223,18 @@ class _HomeScreenState extends State<HomeScreen> {
       );
     }
 
-    // 목록이 있을 때
     return ListView.builder(
       itemCount: _dogList.length,
-      shrinkWrap: true, // SingleChildScrollView 안에서 ListView가 올바르게 작동하도록 설정
-      physics: const NeverScrollableScrollPhysics(), // 부모 스크롤을 사용
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
       itemBuilder: (context, index) {
         final dog = _dogList[index];
-        // 13. Figma 디자인과 유사한 반려견 카드
+
+        final imageUrl = dog.profileImageUrl;
+        final fullImageUrl = (imageUrl != null && imageUrl.isNotEmpty)
+            ? '$_baseUrl$imageUrl'
+            : null;
+
         return Card(
           color: Colors.white,
           margin: const EdgeInsets.only(bottom: 12),
@@ -253,11 +242,16 @@ class _HomeScreenState extends State<HomeScreen> {
             borderRadius: BorderRadius.circular(16),
           ),
           child: ListTile(
-            leading: const CircleAvatar(
+            contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+            leading: CircleAvatar(
               radius: 25,
-              // TODO: 강아지 이미지 연동
-              backgroundColor: Colors.grey,
-              child: Icon(Icons.pets, color: Colors.white),
+              backgroundColor: Colors.grey[300],
+              backgroundImage: (fullImageUrl != null)
+                  ? NetworkImage(fullImageUrl)
+                  : null,
+              child: (fullImageUrl == null)
+                  ? const Icon(Icons.pets, color: Colors.grey)
+                  : null,
             ),
             title: Text(
               dog.name,
@@ -267,6 +261,22 @@ class _HomeScreenState extends State<HomeScreen> {
               '생년월일: ${dog.birthDate}',
               style: const TextStyle(color: Colors.grey),
             ),
+
+            // 2. ⭐️ [수정] onTap 이벤트를 async/await로 변경 ⭐️
+            onTap: () async { // 👈 1. async 추가
+              // 2. 상세 화면이 닫힐 때까지 기다리고, 반환값(result)을 받음
+              final result = await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => DogDetailScreen(dog: dog),
+                ),
+              );
+
+              // 3. 만약 상세 화면에서 'true' (삭제 성공)를 반환했다면
+              if (result == true) {
+                _fetchDogs(); // 👈 목록을 새로고침
+              }
+            },
           ),
         );
       },

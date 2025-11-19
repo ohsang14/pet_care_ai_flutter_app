@@ -1,36 +1,49 @@
 import 'dart:convert';
-import 'dart:io';
+import 'dart:io'; // File
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
-import 'member.dart';
+import 'models/dog.dart'; // 👈 Dog 모델 import
 
-
-class AddDogScreen extends StatefulWidget {
-  final Member member;
-  const AddDogScreen({super.key, required this.member});
+class EditDogScreen extends StatefulWidget {
+  final Dog dog; // 👈 1. [신규] 수정할 Dog 객체를 받음
+  const EditDogScreen({super.key, required this.dog});
 
   @override
-  State<AddDogScreen> createState() => _AddDogScreenState();
+  State<EditDogScreen> createState() => _EditDogScreenState();
 }
 
-class _AddDogScreenState extends State<AddDogScreen> {
-  // 2. 폼 입력을 위한 컨트롤러 및 변수
+class _EditDogScreenState extends State<EditDogScreen> {
+  // 폼 입력을 위한 컨트롤러 및 변수
   final _nameController = TextEditingController();
   final _birthDateController = TextEditingController();
-  final _breedController = TextEditingController(); // 견종
-  final _weightController = TextEditingController(); // 체중
+  final _breedController = TextEditingController();
+  final _weightController = TextEditingController();
 
-  String? _gender = 'male'; // 성별 (기본값 'male')
-  bool _isNeutered = false; // 중성화 여부 (기본값 false)
+  String? _gender;
+  bool _isNeutered = false;
 
-  File? _imageFile; // 3. 선택된 프로필 이미지 파일
+  File? _imageFile; // 2. 새로 선택한 이미지 파일
+  String? _existingImageUrl; // 3. 기존에 저장되어 있던 이미지 URL
   final ImagePicker _picker = ImagePicker();
   bool _isLoading = false;
 
-  // 4. 데스크탑(Windows/Mac) 기준
+  // 4. 안드로이드 에뮬레이터 기준
   final String _baseUrl = "http://10.0.2.2:8080";
-  // (Android 에뮬레이터: "http://10.0.2.2:8080")
+  // (데스크탑: "http://localhost:8080")
+
+  @override
+  void initState() {
+    super.initState();
+    // 5. [신규] 위젯이 로드될 때, 전달받은 Dog 객체로 폼을 채움
+    _nameController.text = widget.dog.name;
+    _birthDateController.text = widget.dog.birthDate;
+    _breedController.text = widget.dog.breed ?? '';
+    _weightController.text = widget.dog.weight?.toString() ?? '';
+    _gender = widget.dog.gender ?? 'male';
+    _isNeutered = widget.dog.isNeutered ?? false;
+    _existingImageUrl = widget.dog.profileImageUrl;
+  }
 
   @override
   void dispose() {
@@ -41,17 +54,18 @@ class _AddDogScreenState extends State<AddDogScreen> {
     super.dispose();
   }
 
-  // 5. 갤러리/카메라에서 이미지 선택 (analysis_screen.dart와 유사)
+  // 갤러리/카메라에서 이미지 선택
   Future<void> _pickImage(ImageSource source) async {
     try {
       final XFile? pickedFile = await _picker.pickImage(
         source: source,
-        maxWidth: 600, // 이미지 크기 제한 (서버 부담 감소)
+        maxWidth: 600,
         imageQuality: 80,
       );
       if (pickedFile != null) {
         setState(() {
-          _imageFile = File(pickedFile.path);
+          _imageFile = File(pickedFile.path); // 👈 새 이미지 파일로 설정
+          _existingImageUrl = null; // 👈 기존 이미지는 사용 안 함
         });
       }
     } catch (e) {
@@ -59,8 +73,8 @@ class _AddDogScreenState extends State<AddDogScreen> {
     }
   }
 
-  // 6. '저장하기' 버튼 클릭 시 실행되는 메인 함수
-  Future<void> _saveDog() async {
+  // 6. [수정] '수정 완료' 버튼 클릭 시
+  Future<void> _updateDog() async {
     if (_nameController.text.isEmpty || _birthDateController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('이름과 생년월일을 모두 입력해주세요.')),
@@ -72,22 +86,22 @@ class _AddDogScreenState extends State<AddDogScreen> {
       _isLoading = true;
     });
 
-    String? profileImageUrl; // 최종 저장될 이미지 URL
+    String? finalImageUrl = _existingImageUrl; // 👈 기본값은 기존 이미지 URL
 
     try {
-      // 7. (1단계) 이미지가 선택되었다면, 이미지를 먼저 업로드
+      // 7. (1단계) 만약 새 이미지를 선택했다면, 업로드
       if (_imageFile != null) {
-        profileImageUrl = await _uploadImage(_imageFile!);
+        finalImageUrl = await _uploadImage(_imageFile!);
       }
 
-      // (2단계) 이미지 URL(있거나 null)을 포함하여 반려견 정보 최종 저장
-      await _saveDogDetails(profileImageUrl);
+      // (2단계) 최종 이미지 URL과 모든 정보를 API로 전송
+      await _updateDogDetails(finalImageUrl);
 
     } catch (e) {
-      print('저장 프로세스 에러: $e');
+      print('수정 프로세스 에러: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('저장 중 오류가 발생했습니다: ${e.toString()}')),
+          SnackBar(content: Text('수정 중 오류가 발생했습니다: ${e.toString()}')),
         );
       }
     } finally {
@@ -99,7 +113,7 @@ class _AddDogScreenState extends State<AddDogScreen> {
     }
   }
 
-  // 7-1. (1단계) 이미지 업로드 API (POST /api/upload)
+  // (1단계) 이미지 업로드 API (POST /api/upload)
   Future<String?> _uploadImage(File imageFile) async {
     final url = Uri.parse('$_baseUrl/api/upload');
     try {
@@ -110,9 +124,9 @@ class _AddDogScreenState extends State<AddDogScreen> {
       var streamedResponse = await request.send();
       var response = await http.Response.fromStream(streamedResponse);
 
-      if (response.statusCode == 201) { // 201 CREATED
+      if (response.statusCode == 201) {
         final Map<String, dynamic> responseData = jsonDecode(response.body);
-        return responseData['imageUrl']; // {"imageUrl": "/images/..."}
+        return responseData['imageUrl'];
       } else {
         throw Exception('이미지 업로드 실패: ${response.body}');
       }
@@ -121,42 +135,51 @@ class _AddDogScreenState extends State<AddDogScreen> {
     }
   }
 
-  // 7-2. (2단계) 반려견 정보 저장 API (POST /api/members/{id}/dogs)
-  Future<void> _saveDogDetails(String? profileImageUrl) async {
-    final url = Uri.parse('$_baseUrl/api/members/${widget.member.id}/dogs');
+  // 8. [수정] (2단계) 반려견 정보 수정 API (PUT /api/dogs/{id})
+  Future<void> _updateDogDetails(String? profileImageUrl) async {
+    final url = Uri.parse('$_baseUrl/api/dogs/${widget.dog.id}');
     try {
-      final response = await http.post(
+      final response = await http.put( // 👈 http.put
         url,
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'name': _nameController.text,
           'birthDate': _birthDateController.text,
-          'profileImageUrl': profileImageUrl, // 👈 (1) 이미지 URL (null일 수도 있음)
-          'breed': _breedController.text,     // 👈 (2) 견종
-          'gender': _gender,                  // 👈 (3) 성별
-          'isNeutered': _isNeutered,          // 👈 (4) 중성화 여부
+          'profileImageUrl': profileImageUrl,
+          'breed': _breedController.text,
+          'gender': _gender,
+          'isNeutered': _isNeutered,
           'weight': _weightController.text.isNotEmpty
-              ? double.tryParse(_weightController.text) // 👈 (5) 체중 (숫자)
+              ? double.tryParse(_weightController.text)
               : null,
         }),
       );
 
       if (!mounted) return;
 
-      if (response.statusCode == 201) { // 201 CREATED
+      if (response.statusCode == 200) { // 👈 200 OK
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('반려견이 성공적으로 등록되었습니다.')),
+          const SnackBar(content: Text('반려견 정보가 성공적으로 수정되었습니다.')),
         );
-        Navigator.pop(context, true); // 👈 8. true를 반환하여 홈 화면이 새로고침되도록 함
+
+        // 9. ⭐️ [핵심] ⭐️
+        // 서버가 반환한 수정된 Dog 객체(JSON)를 파싱
+        final Map<String, dynamic> responseData = jsonDecode(utf8.decode(response.bodyBytes));
+        final Dog savedDog = Dog.fromJson(responseData);
+
+        // 10. ⭐️ [핵심] ⭐️
+        // 'true' 대신, 수정된 'savedDog' 객체를 반환하며 닫기
+        Navigator.pop(context, savedDog);
+
       } else {
-        throw Exception('반려견 정보 저장 실패: ${response.body}');
+        throw Exception('반려견 정보 수정 실패: ${response.body}');
       }
     } catch (e) {
-      throw Exception('반려견 정보 저장 중 에러: $e');
+      throw Exception('반려견 정보 수정 중 에러: $e');
     }
   }
 
-  // 9. 날짜 선택 달력
+  // 날짜 선택 달력
   Future<void> _selectDate() async {
     DateTime? pickedDate = await showDatePicker(
       context: context,
@@ -177,7 +200,7 @@ class _AddDogScreenState extends State<AddDogScreen> {
     return Scaffold(
       backgroundColor: Colors.grey[900],
       appBar: AppBar(
-        title: const Text('새 반려견 등록'),
+        title: const Text('반려견 정보 수정'), // 👈 제목 변경
         backgroundColor: Colors.grey[900],
         foregroundColor: Colors.white,
       ),
@@ -188,11 +211,9 @@ class _AddDogScreenState extends State<AddDogScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // --- 프로필 사진 ---
-            _buildImagePicker(),
+            _buildImagePicker(), // 👈 기존 이미지를 표시하는 로직 포함
             const SizedBox(height: 30),
 
-            // --- 필수 정보 ---
             _buildTextField(
               controller: _nameController,
               labelText: '이름 *',
@@ -206,8 +227,6 @@ class _AddDogScreenState extends State<AddDogScreen> {
               suffixIcon: const Icon(Icons.calendar_today, color: Colors.white70),
             ),
             const SizedBox(height: 30),
-
-            // --- 선택 정보 ---
             _buildTextField(
               controller: _breedController,
               labelText: '견종 (선택)',
@@ -221,27 +240,23 @@ class _AddDogScreenState extends State<AddDogScreen> {
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
             ),
             const SizedBox(height: 20),
-
-            // --- 성별 선택 ---
             _buildGenderSelector(),
             const SizedBox(height: 20),
-
-            // --- 중성화 여부 ---
             _buildNeuteredSwitch(),
             const SizedBox(height: 40),
 
             // --- 저장 버튼 ---
             ElevatedButton(
-              onPressed: _saveDog,
+              onPressed: _updateDog, // 👈 _updateDog 함수 호출
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blueAccent,
+                backgroundColor: Colors.green, // 👈 수정 버튼 색상
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              child: const Text('저장하기', style: TextStyle(fontSize: 16)),
+              child: const Text('수정 완료', style: TextStyle(fontSize: 16)), // 👈 텍스트 변경
             ),
           ],
         ),
@@ -249,17 +264,31 @@ class _AddDogScreenState extends State<AddDogScreen> {
     );
   }
 
-  // --- 10. (신규) 위젯 빌더들 ---
+  // --- 위젯 빌더들 ---
 
   Widget _buildImagePicker() {
+    // [신규] 기존 이미지 URL 조합
+    final String? fullImageUrl = (_existingImageUrl != null && _existingImageUrl!.isNotEmpty)
+        ? '$_baseUrl$_existingImageUrl'
+        : null;
+
+    ImageProvider? backgroundImage;
+    if (_imageFile != null) {
+      backgroundImage = FileImage(_imageFile!); // 1. (우선) 새 파일
+    } else if (fullImageUrl != null) {
+      backgroundImage = NetworkImage(fullImageUrl); // 2. (차선) 기존 네트워크 이미지
+    } else {
+      backgroundImage = null; // 3. 둘 다 없음
+    }
+
     return Center(
       child: Stack(
         children: [
           CircleAvatar(
             radius: 60,
             backgroundColor: Colors.white.withOpacity(0.1),
-            backgroundImage: _imageFile != null ? FileImage(_imageFile!) : null,
-            child: _imageFile == null
+            backgroundImage: backgroundImage, // 👈 backgroundImage 적용
+            child: (backgroundImage == null)
                 ? const Icon(Icons.pets, size: 60, color: Colors.white70)
                 : null,
           ),
@@ -267,10 +296,7 @@ class _AddDogScreenState extends State<AddDogScreen> {
             bottom: 0,
             right: 0,
             child: InkWell(
-              onTap: () {
-                // 갤러리/카메라 선택창 띄우기
-                _showImageSourceDialog();
-              },
+              onTap: _showImageSourceDialog,
               child: const CircleAvatar(
                 radius: 20,
                 backgroundColor: Colors.blueAccent,
@@ -403,11 +429,11 @@ class _AddDogScreenState extends State<AddDogScreen> {
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
         ),
-        enabledBorder: OutlineInputBorder( // 기본 테두리
+        enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: Colors.grey),
         ),
-        focusedBorder: OutlineInputBorder( // 포커스 시 테두리
+        focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: Colors.blueAccent, width: 2),
         ),

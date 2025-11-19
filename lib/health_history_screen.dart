@@ -20,7 +20,6 @@ class _HealthHistoryScreenState extends State<HealthHistoryScreen> {
 
   // Spring Boot 서버 URL (Android 에뮬레이터 기준)
   final String _baseUrl = "http://10.0.2.2:8080";
-  // (만약 iOS 또는 데스크탑을 사용 중이라면 "http://localhost:8080"로 변경)
 
   @override
   void initState() {
