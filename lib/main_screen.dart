@@ -3,6 +3,7 @@ import 'home_screen.dart';
 import 'member.dart';
 import 'analysis_screen.dart';
 import 'health_check_screen.dart';
+import 'my_page_screen.dart';
 
 class MainScreen extends StatefulWidget {
   final Member member;
@@ -22,8 +23,8 @@ class _MainScreenState extends State<MainScreen> {
     _widgetOptions = <Widget>[
       HomeScreen(member: widget.member),
       const AnalysisScreen(),
-      HealthCheckScreen(member: widget.member), // 👈 2. 2번 인덱스(세 번째 탭) 수정
-      const Center(child: Text('마이 페이지')),
+      HealthCheckScreen(member: widget.member),
+      MyPageScreen(member: widget.member),
     ];
   }
 
@@ -37,35 +38,36 @@ class _MainScreenState extends State<MainScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: _widgetOptions.elementAt(_selectedIndex),
-      bottomNavigationBar: BottomNavigationBar(
-        items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_outlined),
-            activeIcon: Icon(Icons.home),
-            label: '홈',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.camera_alt_outlined),
-            activeIcon: Icon(Icons.camera_alt),
-            label: '품종 분석',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.favorite_border), // 👈 '건강 체크' 탭 아이콘
-            activeIcon: Icon(Icons.favorite),
-            label: '건강 체크',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            activeIcon: Icon(Icons.person),
-            label: '마이페이지',
-          ),
-        ],
-        currentIndex: _selectedIndex,
-        selectedItemColor: Colors.black,
-        unselectedItemColor: Colors.grey,
-        onTap: _onItemTapped,
-        type: BottomNavigationBarType.fixed,
-        showUnselectedLabels: true,
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 20,
+              offset: const Offset(0, -5),
+            ),
+          ],
+        ),
+        child: BottomNavigationBar(
+          items: const <BottomNavigationBarItem>[
+            BottomNavigationBarItem(icon: Icon(Icons.home_outlined), activeIcon: Icon(Icons.home), label: '홈'),
+            BottomNavigationBarItem(icon: Icon(Icons.camera_alt_outlined), activeIcon: Icon(Icons.camera_alt), label: '품종 분석'),
+            BottomNavigationBarItem(icon: Icon(Icons.favorite_border), activeIcon: Icon(Icons.favorite), label: '건강 체크'),
+            BottomNavigationBarItem(icon: Icon(Icons.person_outline), activeIcon: Icon(Icons.person), label: '마이페이지'),
+          ],
+          currentIndex: _selectedIndex,
+
+          onTap: _onItemTapped,
+
+          selectedItemColor: const Color(0xFF6C63FF),
+          unselectedItemColor: Colors.grey[400],
+          showUnselectedLabels: true,
+          type: BottomNavigationBarType.fixed,
+          backgroundColor: Colors.white,
+          elevation: 0,
+          selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+        ),
       ),
     );
   }

@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'add_dog_screen.dart';
 import 'app_config.dart';
+import 'add_dog_screen.dart';
 import 'dog_detail_screen.dart';
 import 'member.dart';
 import 'models/dog.dart';
@@ -19,10 +19,6 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Dog> _dogList = [];
   bool _isLoading = true;
 
-  // 안드로이드 에뮬레이터 기준
-  
-  // (데스크탑: "http://localhost:8080")
-
   @override
   void initState() {
     super.initState();
@@ -30,84 +26,78 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _fetchDogs() async {
-    setState(() {
-      _isLoading = true;
-    });
-
+    setState(() { _isLoading = true; });
     final url = Uri.parse('${AppConfig.baseUrl}/api/members/${widget.member.id}/dogs');
     try {
       final response = await http.get(url);
-
       if (!mounted) return;
-
       if (response.statusCode == 200) {
-        final List<dynamic> responseData =
-        jsonDecode(utf8.decode(response.bodyBytes));
+        final List<dynamic> responseData = jsonDecode(utf8.decode(response.bodyBytes));
         setState(() {
           _dogList = responseData.map((data) => Dog.fromJson(data)).toList();
           _isLoading = false;
         });
       } else {
-        print('반려견 목록 로드 실패: ${response.statusCode}');
-        setState(() {
-          _isLoading = false;
-        });
+        setState(() { _isLoading = false; });
       }
     } catch (e) {
-      print('반려견 목록 로드 에러: $e');
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
+      if (mounted) setState(() { _isLoading = false; });
     }
   }
 
   void _navigateToAddDog() {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => AddDogScreen(member: widget.member),
-      ),
+      MaterialPageRoute(builder: (context) => AddDogScreen(member: widget.member)),
     ).then((result) {
-      if (result == true) {
-        _fetchDogs();
-      }
+      if (result == true) _fetchDogs();
     });
   }
-
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[900],
-      body: SafeArea(
+      // AppBar는 main.dart 테마를 따름 (흰색)
+      appBar: AppBar(
+        title: Row(
+          children: [
+            const Text('PetCare AI', style: TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(width: 5),
+            Icon(Icons.pets, color: Theme.of(context).primaryColor, size: 20),
+          ],
+        ),
+        automaticallyImplyLeading: false,
+      ),
+      body: RefreshIndicator(
+        onRefresh: _fetchDogs,
         child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '안녕하세요, ${widget.member.name}님! 👋',
-                  style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 26,
-                      fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  '오늘도 우리 아이들이 건강하게!',
-                  style: TextStyle(color: Colors.white70, fontSize: 16),
-                ),
-                const SizedBox(height: 30),
-                _buildQuickActionsCard(context),
-                const SizedBox(height: 30),
-                _buildMyDogsHeader(context),
-                const SizedBox(height: 20),
-                _buildDogList(),
-              ],
-            ),
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('안녕하세요, ${widget.member.name}님! 👋', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black87)),
+              const SizedBox(height: 8),
+              Text('오늘도 우리 아이들이 건강하게!', style: TextStyle(color: Colors.grey[600], fontSize: 16)),
+
+              const SizedBox(height: 30),
+              _buildQuickActionsCard(context),
+
+              const SizedBox(height: 30),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text('내 반려견', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87)),
+                  TextButton.icon(
+                    onPressed: _navigateToAddDog,
+                    icon: const Icon(Icons.add, size: 18),
+                    label: const Text('추가'),
+                    style: TextButton.styleFrom(foregroundColor: const Color(0xFF6C63FF)),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              _buildDogList(),
+            ],
           ),
         ),
       ),
@@ -115,169 +105,93 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildQuickActionsCard(BuildContext context) {
-    // ... (수정 사항 없음) ...
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 5),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 15, offset: const Offset(0, 5))],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          const Text(
-            '빠른 기능',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildActionButton(context, Icons.camera_alt, '품종 분석'),
-              _buildActionButton(context, Icons.favorite, '건강 체크'),
-            ],
-          ),
+          _buildActionButton(context, Icons.camera_alt_outlined, '품종 분석', Colors.blueAccent),
+          Container(width: 1, height: 40, color: Colors.grey[200]),
+          _buildActionButton(context, Icons.favorite_border, '건강 체크', Colors.redAccent),
         ],
       ),
     );
   }
 
-  Widget _buildActionButton(
-      BuildContext context, IconData icon, String label) {
-    // ... (수정 사항 없음) ...
-    return Column(
-      children: [
-        InkWell(
-          onTap: () {
-            // TODO: '품종 분석' 또는 '건강 체크' 탭으로 이동
-          },
-          child: Container(
-            width: 70,
-            height: 70,
-            decoration: BoxDecoration(
-              color: Colors.grey[200],
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Icon(icon, size: 30, color: Colors.grey[700]),
+  Widget _buildActionButton(BuildContext context, IconData icon, String label, Color color) {
+    return InkWell(
+      onTap: () {}, // TODO: 탭 이동 로직
+      borderRadius: BorderRadius.circular(16),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(16)),
+            child: Icon(icon, size: 28, color: color),
           ),
-        ),
-        const SizedBox(height: 8),
-        Text(label, style: const TextStyle(fontWeight: FontWeight.w500)),
-      ],
-    );
-  }
-
-  Widget _buildMyDogsHeader(BuildContext context) {
-    // ... (수정 사항 없음) ...
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        const Text(
-          '내 반려견',
-          style: TextStyle(
-              color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
-        ),
-        TextButton.icon(
-          onPressed: _navigateToAddDog,
-          icon: const Icon(Icons.add, color: Colors.white),
-          label:
-          const Text('추가', style: TextStyle(color: Colors.white, fontSize: 16)),
-          style: TextButton.styleFrom(
-            backgroundColor: Colors.white.withOpacity(0.2),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-        ),
-      ],
+          const SizedBox(height: 8),
+          Text(label, style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.black87)),
+        ],
+      ),
     );
   }
 
   Widget _buildDogList() {
-    if (_isLoading) {
-      return const Center(
-          child: CircularProgressIndicator(color: Colors.white));
-    }
-
+    if (_isLoading) return const Center(child: CircularProgressIndicator());
     if (_dogList.isEmpty) {
-      // ... (수정 사항 없음) ...
       return Container(
         padding: const EdgeInsets.symmetric(vertical: 40),
-        decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: const Center(
-          child: Text(
-            '등록된 반려견이 없습니다.\n[+ 추가] 버튼을 눌러 등록해주세요.',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.white70, fontSize: 16),
-          ),
+        width: double.infinity,
+        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20)),
+        child: Column(
+          children: [
+            Icon(Icons.pets, size: 40, color: Colors.grey[300]),
+            const SizedBox(height: 10),
+            const Text('등록된 반려견이 없습니다.', style: TextStyle(color: Colors.grey)),
+          ],
         ),
       );
     }
 
-    return ListView.builder(
+    return ListView.separated(
       itemCount: _dogList.length,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
+      separatorBuilder: (context, index) => const SizedBox(height: 16),
       itemBuilder: (context, index) {
         final dog = _dogList[index];
-
         final imageUrl = dog.profileImageUrl;
-        final fullImageUrl = (imageUrl != null && imageUrl.isNotEmpty)
-            ? '${AppConfig.baseUrl}$imageUrl'
-            : null;
+        final fullImageUrl = (imageUrl != null && imageUrl.isNotEmpty) ? '${AppConfig.baseUrl}$imageUrl' : null;
 
-        return Card(
-          color: Colors.white,
-          margin: const EdgeInsets.only(bottom: 12),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+        return Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))],
           ),
           child: ListTile(
-            contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+            contentPadding: const EdgeInsets.all(16),
             leading: CircleAvatar(
-              radius: 25,
-              backgroundColor: Colors.grey[300],
-              backgroundImage: (fullImageUrl != null)
-                  ? NetworkImage(fullImageUrl)
-                  : null,
-              child: (fullImageUrl == null)
-                  ? const Icon(Icons.pets, color: Colors.grey)
-                  : null,
+              radius: 30,
+              backgroundColor: const Color(0xFFF0F0F3),
+              backgroundImage: fullImageUrl != null ? NetworkImage(fullImageUrl) : null,
+              child: fullImageUrl == null ? const Icon(Icons.pets, color: Colors.grey) : null,
             ),
-            title: Text(
-              dog.name,
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            title: Text(dog.name, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87)),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 4),
+                Text(dog.breed ?? '견종 정보 없음', style: TextStyle(color: Colors.grey[600], fontSize: 13)),
+              ],
             ),
-            subtitle: Text(
-              '생년월일: ${dog.birthDate}',
-              style: const TextStyle(color: Colors.grey),
-            ),
-
-            // 2. ⭐️ [수정] onTap 이벤트를 async/await로 변경 ⭐️
-            onTap: () async { // 👈 1. async 추가
-              // 2. 상세 화면이 닫힐 때까지 기다리고, 반환값(result)을 받음
-              final result = await Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => DogDetailScreen(dog: dog),
-                ),
-              );
-
-              // 3. 만약 상세 화면에서 'true' (삭제 성공)를 반환했다면
-              if (result == true) {
-                _fetchDogs(); // 👈 목록을 새로고침
-              }
-            },
+            trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 16, color: Colors.grey),
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => DogDetailScreen(dog: dog))),
           ),
         );
       },

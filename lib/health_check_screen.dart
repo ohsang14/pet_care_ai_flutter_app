@@ -2,8 +2,8 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'app_config.dart';
-import 'member.dart'; // 👈 [수정] 'models/member.dart' -> 'member.dart'
 import 'models/dog.dart';
+import 'member.dart';
 import 'health_history_screen.dart';
 
 class HealthCheckScreen extends StatefulWidget {
@@ -18,9 +18,6 @@ class _HealthCheckScreenState extends State<HealthCheckScreen> {
   List<Dog> _dogList = [];
   bool _isLoading = true;
 
-  // 안드로이드 에뮬레이터 기준
-  
-
   @override
   void initState() {
     super.initState();
@@ -28,15 +25,12 @@ class _HealthCheckScreenState extends State<HealthCheckScreen> {
   }
 
   Future<void> _fetchDogs() async {
-    // API로 강아지 목록 가져오기
     final url = Uri.parse('${AppConfig.baseUrl}/api/members/${widget.member.id}/dogs');
     try {
       final response = await http.get(url);
       if (!mounted) return;
-
       if (response.statusCode == 200) {
-        final List<dynamic> responseData =
-        jsonDecode(utf8.decode(response.bodyBytes));
+        final List<dynamic> responseData = jsonDecode(utf8.decode(response.bodyBytes));
         setState(() {
           _dogList = responseData.map((data) => Dog.fromJson(data)).toList();
           _isLoading = false;
@@ -45,90 +39,49 @@ class _HealthCheckScreenState extends State<HealthCheckScreen> {
         setState(() { _isLoading = false; });
       }
     } catch (e) {
-      if (mounted) {
-        setState(() { _isLoading = false; });
-      }
+      if (mounted) setState(() { _isLoading = false; });
     }
-  }
-
-  // '과거 기록' 화면으로 이동
-  void _navigateToHealthHistory(Dog dog) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => HealthHistoryScreen(dog: dog),
-      ),
-    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[900],
-      appBar: AppBar(
-        title: const Text('건강 체크'),
-        backgroundColor: Colors.grey[900],
-        foregroundColor: Colors.white,
-      ),
-      body: _buildDogList(),
-    );
-  }
-
-  // 강아지 목록 UI
-  Widget _buildDogList() {
-    if (_isLoading) {
-      return const Center(
-          child: CircularProgressIndicator(color: Colors.white));
-    }
-
-    if (_dogList.isEmpty) {
-      return const Center(
-        child: Text(
-          '등록된 반려견이 없습니다.\n[홈] 탭에서 먼저 반려견을 등록해주세요.',
-          textAlign: TextAlign.center,
-          style: TextStyle(color: Colors.white70, fontSize: 16),
-        ),
-      );
-    }
-
-    // 강아지 목록
-    return ListView.builder(
-      padding: const EdgeInsets.all(16.0),
-      itemCount: _dogList.length,
-      itemBuilder: (context, index) {
-        final dog = _dogList[index];
-        return Card(
-          color: Colors.grey[800],
-          margin: const EdgeInsets.only(bottom: 12),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: ListTile(
-            contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-            leading: const CircleAvatar(
-              backgroundColor: Colors.blueAccent,
-              radius: 25,
-              child: Icon(Icons.pets, color: Colors.white, size: 28),
+      appBar: AppBar(title: const Text('건강 체크')),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _dogList.isEmpty
+          ? const Center(child: Text('등록된 반려견이 없습니다.', style: TextStyle(color: Colors.grey)))
+          : ListView.separated(
+        padding: const EdgeInsets.all(20.0),
+        itemCount: _dogList.length,
+        separatorBuilder: (context, index) => const SizedBox(height: 16),
+        itemBuilder: (context, index) {
+          final dog = _dogList[index];
+          return Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))],
             ),
-            title: Text(
-              dog.name,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
+            child: ListTile(
+              contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+              leading: CircleAvatar(
+                backgroundColor: const Color(0xFFE8EAF6),
+                radius: 28,
+                child: const Icon(Icons.favorite, color: Color(0xFF6C63FF)),
               ),
+              title: Text(dog.name, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87)),
+              subtitle: const Text('건강 기록 보러가기', style: TextStyle(color: Colors.grey)),
+              trailing: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(color: Colors.grey[100], borderRadius: BorderRadius.circular(10)),
+                child: const Icon(Icons.arrow_forward_ios_rounded, size: 16, color: Colors.grey),
+              ),
+              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => HealthHistoryScreen(dog: dog))),
             ),
-            subtitle: const Text(
-              '과거 건강 기록 보기',
-              style: TextStyle(color: Colors.white70),
-            ),
-            trailing: const Icon(Icons.arrow_forward_ios, color: Colors.white54, size: 16),
-            onTap: () {
-              _navigateToHealthHistory(dog);
-            },
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 }
