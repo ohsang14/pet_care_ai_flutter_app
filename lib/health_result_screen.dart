@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'app_config.dart';
 import 'models/dog.dart';
 import 'models/health_check.dart';       // 👈 1. HealthCheck 모델 import
 import 'models/health_check_data.dart';
@@ -43,7 +44,7 @@ class _HealthResultScreenState extends State<HealthResultScreen> {
   late List<String> _allAnswerTexts;
   late bool _isViewingPastRecord; // '저장' 버튼 등을 숨기기 위한 플래그
 
-  final String _baseUrl = "http://10.0.2.2:8080";
+  
 
   @override
   void initState() {
@@ -110,7 +111,7 @@ class _HealthResultScreenState extends State<HealthResultScreen> {
   Future<void> _saveResult() async {
     setState(() { _isLoading = true; });
 
-    final url = Uri.parse('$_baseUrl/api/dogs/${widget.dog.id}/health-checks');
+    final url = Uri.parse('${AppConfig.baseUrl}/api/dogs/${widget.dog.id}/health-checks');
 
     try {
       final response = await http.post(

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'app_config.dart'; // 👈 1. [추가] AppConfig import
 import 'member.dart';
 import 'main_screen.dart';
 
@@ -20,7 +21,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
   // 회원가입 함수
   Future<void> signUp() async {
-    final url = Uri.parse('http://10.0.2.2:8080/api/members/join');
+    // 2. [수정] AppConfig.baseUrl 사용
+    final url = Uri.parse('${AppConfig.baseUrl}/api/members/join');
     try {
       final response = await http.post(
         url,
@@ -56,11 +58,19 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  // 로그인 함수 (수정됨)
+  // 로그인 함수
+  // 로그인 함수
   Future<void> login() async {
-    final url = Uri.parse('http://10.0.2.2:8080/api/members/login');
+    // 1. [디버깅] 현재 사용 중인 주소 확인하기
+    print("DEBUG: 현재 감지된 플랫폼 주소 = ${AppConfig.baseUrl}");
+
+    final url = Uri.parse('${AppConfig.baseUrl}/api/members/login');
+
+    print("DEBUG: 실제 요청 보내는 URL = $url"); // URL 확인
+
     try {
       final response = await http.post(
+        // ... (이하 코드 동일)
         url,
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
@@ -74,14 +84,11 @@ class _LoginScreenState extends State<LoginScreen> {
       if (response.statusCode == 200) {
         print('로그인 성공');
 
-        // 1. 서버가 보낸 JSON 문자열을 Dart 맵으로 변환 (한글 깨짐 방지)
         final Map<String, dynamic> responseData =
         jsonDecode(utf8.decode(response.bodyBytes));
 
-        // 2. 맵을 Member 객체로 변환
         final Member loggedInMember = Member.fromJson(responseData);
 
-        // 3. MainScreen으로 이동할 때, 로그인한 사용자 정보를 함께 넘겨줌
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(

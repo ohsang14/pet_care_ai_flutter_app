@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'add_dog_screen.dart';
+import 'app_config.dart';
 import 'dog_detail_screen.dart';
 import 'member.dart';
 import 'models/dog.dart';
@@ -19,7 +20,7 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isLoading = true;
 
   // 안드로이드 에뮬레이터 기준
-  final String _baseUrl = "http://10.0.2.2:8080";
+  
   // (데스크탑: "http://localhost:8080")
 
   @override
@@ -33,7 +34,7 @@ class _HomeScreenState extends State<HomeScreen> {
       _isLoading = true;
     });
 
-    final url = Uri.parse('$_baseUrl/api/members/${widget.member.id}/dogs');
+    final url = Uri.parse('${AppConfig.baseUrl}/api/members/${widget.member.id}/dogs');
     try {
       final response = await http.get(url);
 
@@ -232,7 +233,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
         final imageUrl = dog.profileImageUrl;
         final fullImageUrl = (imageUrl != null && imageUrl.isNotEmpty)
-            ? '$_baseUrl$imageUrl'
+            ? '${AppConfig.baseUrl}$imageUrl'
             : null;
 
         return Card(

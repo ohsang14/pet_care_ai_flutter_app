@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'app_config.dart';
 import 'member.dart'; // 👈 [수정] 'models/member.dart' -> 'member.dart'
 import 'models/dog.dart';
 import 'health_history_screen.dart';
@@ -18,7 +19,7 @@ class _HealthCheckScreenState extends State<HealthCheckScreen> {
   bool _isLoading = true;
 
   // 안드로이드 에뮬레이터 기준
-  final String _baseUrl = "http://10.0.2.2:8080";
+  
 
   @override
   void initState() {
@@ -28,7 +29,7 @@ class _HealthCheckScreenState extends State<HealthCheckScreen> {
 
   Future<void> _fetchDogs() async {
     // API로 강아지 목록 가져오기
-    final url = Uri.parse('$_baseUrl/api/members/${widget.member.id}/dogs');
+    final url = Uri.parse('${AppConfig.baseUrl}/api/members/${widget.member.id}/dogs');
     try {
       final response = await http.get(url);
       if (!mounted) return;

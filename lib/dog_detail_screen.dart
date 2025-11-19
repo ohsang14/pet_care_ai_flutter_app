@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'app_config.dart';
 import 'models/dog.dart';
 import 'edit_dog_screen.dart'; // 👈 1. [추가] 수정 화면 import
 
@@ -19,7 +20,7 @@ class _DogDetailScreenState extends State<DogDetailScreen> {
   bool _hasBeenEdited = false; // 5. ⭐️ [신규] 수정 여부 플래그 (홈 화면 새로고침용)
 
   // 6. [수정] IP 주소 State로 이동
-  final String _baseUrl = "http://10.0.2.2:8080";
+  
   // (데스크탑: "http://localhost:8080")
 
   @override
@@ -31,7 +32,7 @@ class _DogDetailScreenState extends State<DogDetailScreen> {
   // (이하 _deleteDog, _showDeleteConfirmDialog 함수는 State 클래스 안으로 이동)
 
   Future<bool> _deleteDog(BuildContext context) async {
-    final url = Uri.parse('$_baseUrl/api/dogs/${_dog.id}'); // 👈 widget.dog -> _dog
+    final url = Uri.parse('${AppConfig.baseUrl}/api/dogs/${_dog.id}'); // 👈 widget.dog -> _dog
     try {
       final response = await http.delete(url);
       // ... (이하 삭제 로직 동일) ...
@@ -114,7 +115,7 @@ class _DogDetailScreenState extends State<DogDetailScreen> {
     // 13. ⭐️ [수정] widget.dog -> _dog (State 변수 사용)
     final imageUrl = _dog.profileImageUrl;
     final fullImageUrl = (imageUrl != null && imageUrl.isNotEmpty)
-        ? '$_baseUrl$imageUrl'
+        ? '${AppConfig.baseUrl}$imageUrl'
         : null;
 
     // 14. ⭐️ [신규] 뒤로가기 버튼을 눌렀을 때 홈 화면에 신호(true)를 주기 위한 PopScope

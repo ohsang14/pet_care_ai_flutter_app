@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'home_screen.dart';
 import 'member.dart';
 import 'analysis_screen.dart';
-import 'health_check_screen.dart'; // 👈 1. 새 화면 import (아직 파일은 없음)
+import 'health_check_screen.dart';
 
 class MainScreen extends StatefulWidget {
   final Member member;

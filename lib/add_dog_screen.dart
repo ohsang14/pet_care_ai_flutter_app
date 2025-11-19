@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
+import 'app_config.dart';
 import 'member.dart';
 
 
@@ -29,7 +30,7 @@ class _AddDogScreenState extends State<AddDogScreen> {
   bool _isLoading = false;
 
   // 4. 데스크탑(Windows/Mac) 기준
-  final String _baseUrl = "http://10.0.2.2:8080";
+  
   // (Android 에뮬레이터: "http://10.0.2.2:8080")
 
   @override
@@ -101,7 +102,7 @@ class _AddDogScreenState extends State<AddDogScreen> {
 
   // 7-1. (1단계) 이미지 업로드 API (POST /api/upload)
   Future<String?> _uploadImage(File imageFile) async {
-    final url = Uri.parse('$_baseUrl/api/upload');
+    final url = Uri.parse('${AppConfig.baseUrl}/api/upload');
     try {
       var request = http.MultipartRequest('POST', url);
       request.files.add(
@@ -123,7 +124,7 @@ class _AddDogScreenState extends State<AddDogScreen> {
 
   // 7-2. (2단계) 반려견 정보 저장 API (POST /api/members/{id}/dogs)
   Future<void> _saveDogDetails(String? profileImageUrl) async {
-    final url = Uri.parse('$_baseUrl/api/members/${widget.member.id}/dogs');
+    final url = Uri.parse('${AppConfig.baseUrl}/api/members/${widget.member.id}/dogs');
     try {
       final response = await http.post(
         url,

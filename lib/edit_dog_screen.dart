@@ -3,6 +3,7 @@ import 'dart:io'; // File
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
+import 'app_config.dart';
 import 'models/dog.dart'; // 👈 Dog 모델 import
 
 class EditDogScreen extends StatefulWidget {
@@ -29,7 +30,7 @@ class _EditDogScreenState extends State<EditDogScreen> {
   bool _isLoading = false;
 
   // 4. 안드로이드 에뮬레이터 기준
-  final String _baseUrl = "http://10.0.2.2:8080";
+  
   // (데스크탑: "http://localhost:8080")
 
   @override
@@ -115,7 +116,7 @@ class _EditDogScreenState extends State<EditDogScreen> {
 
   // (1단계) 이미지 업로드 API (POST /api/upload)
   Future<String?> _uploadImage(File imageFile) async {
-    final url = Uri.parse('$_baseUrl/api/upload');
+    final url = Uri.parse('${AppConfig.baseUrl}/api/upload');
     try {
       var request = http.MultipartRequest('POST', url);
       request.files.add(
@@ -137,7 +138,7 @@ class _EditDogScreenState extends State<EditDogScreen> {
 
   // 8. [수정] (2단계) 반려견 정보 수정 API (PUT /api/dogs/{id})
   Future<void> _updateDogDetails(String? profileImageUrl) async {
-    final url = Uri.parse('$_baseUrl/api/dogs/${widget.dog.id}');
+    final url = Uri.parse('${AppConfig.baseUrl}/api/dogs/${widget.dog.id}');
     try {
       final response = await http.put( // 👈 http.put
         url,
@@ -269,7 +270,7 @@ class _EditDogScreenState extends State<EditDogScreen> {
   Widget _buildImagePicker() {
     // [신규] 기존 이미지 URL 조합
     final String? fullImageUrl = (_existingImageUrl != null && _existingImageUrl!.isNotEmpty)
-        ? '$_baseUrl$_existingImageUrl'
+        ? '${AppConfig.baseUrl}$_existingImageUrl'
         : null;
 
     ImageProvider? backgroundImage;

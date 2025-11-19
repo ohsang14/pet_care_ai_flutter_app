@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 
+import 'app_config.dart';
 import 'models/analysis_reslult.dart'; // 👈 'analysis_result.dart'로 오타 수정 필요
 import 'models/analysis_result_screen.dart';
 
@@ -23,7 +24,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
   String _petType = "dog";
 
   // Spring Boot 서버 URL (Android 에뮬레이터에서 로컬 PC 접근 시 사용)
-  final String _baseUrl = "http://10.0.2.2:8080";
+  
 
   // 이미지 선택 함수 (갤러리/카메라)
   Future<void> _pickImage(ImageSource source) async {
@@ -62,7 +63,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
 
     // 선택된 _petType에 따라 동적으로 API 엔드포인트 결정
     final String apiEndpoint = _petType == "dog" ? "/dog" : "/cat";
-    final url = Uri.parse('$_baseUrl/api/analysis$apiEndpoint');
+    final url = Uri.parse('${AppConfig.baseUrl}/api/analysis$apiEndpoint');
 
     print('INFO: 호출하는 API URL: $url (펫 타입: $_petType)'); // 디버깅용 로그
 
