@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'app_config.dart';
+import 'app_config.dart'; // AppConfig import
 import 'models/dog.dart';
-import 'edit_dog_screen.dart'; // 👈 1. [추가] 수정 화면 import
+import 'edit_dog_screen.dart';
 
-// 2. ⭐️ [수정] StatelessWidget -> StatefulWidget
 class DogDetailScreen extends StatefulWidget {
   final Dog dog;
   const DogDetailScreen({super.key, required this.dog});
@@ -13,30 +12,23 @@ class DogDetailScreen extends StatefulWidget {
   State<DogDetailScreen> createState() => _DogDetailScreenState();
 }
 
-// 3. ⭐️ [신규] State 클래스 생성
 class _DogDetailScreenState extends State<DogDetailScreen> {
-
-  late Dog _dog; // 4. ⭐️ [신규] 화면에 표시할 '상태'로서의 dog 객체
-  bool _hasBeenEdited = false; // 5. ⭐️ [신규] 수정 여부 플래그 (홈 화면 새로고침용)
-
-  // 6. [수정] IP 주소 State로 이동
-  
-  // (데스크탑: "http://localhost:8080")
+  late Dog _dog;
+  bool _hasBeenEdited = false;
 
   @override
   void initState() {
     super.initState();
-    _dog = widget.dog; // 7. ⭐️ [신규] State 변수를 위젯의 dog 객체로 초기화
+    _dog = widget.dog;
   }
 
-  // (이하 _deleteDog, _showDeleteConfirmDialog 함수는 State 클래스 안으로 이동)
-
   Future<bool> _deleteDog(BuildContext context) async {
-    final url = Uri.parse('${AppConfig.baseUrl}/api/dogs/${_dog.id}'); // 👈 widget.dog -> _dog
+    final url = Uri.parse('${AppConfig.baseUrl}/api/dogs/${_dog.id}');
     try {
       final response = await http.delete(url);
-      // ... (이하 삭제 로직 동일) ...
+
       if (!context.mounted) return false;
+
       if (response.statusCode == 200 || response.statusCode == 204) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('반려견 정보가 삭제되었습니다.')),
@@ -64,7 +56,7 @@ class _DogDetailScreenState extends State<DogDetailScreen> {
       builder: (BuildContext dialogContext) {
         return AlertDialog(
           title: const Text('삭제 확인'),
-          content: Text("'${_dog.name}'의 모든 정보(건강 기록 포함)가 삭제됩니다.\n정말 삭제하시겠습니까?"), // 👈 widget.dog -> _dog
+          content: Text("'${_dog.name}'의 모든 정보(건강 기록 포함)가 삭제됩니다.\n정말 삭제하시겠습니까?"),
           actions: [
             TextButton(
               child: const Text('취소'),
@@ -80,7 +72,7 @@ class _DogDetailScreenState extends State<DogDetailScreen> {
 
                 if (deleteSuccess) {
                   Navigator.of(dialogContext).pop();
-                  Navigator.of(context).pop(true); // 👈 [중요] 'true' 반환
+                  Navigator.of(context).pop(true);
                 }
               },
             ),
@@ -90,51 +82,54 @@ class _DogDetailScreenState extends State<DogDetailScreen> {
     );
   }
 
-  // 8. ⭐️ [수정] 수정 화면으로 이동하는 함수 (핵심)
-  void _navigateToEditDog(BuildContext context) async { // 👈 async 추가
-    // 9. EditDogScreen이 닫힐 때까지 기다리고, 반환값(수정된 Dog 객체)을 받음
+  void _navigateToEditDog(BuildContext context) async {
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => EditDogScreen(dog: _dog), // 👈 state의 _dog 객체 전달
+        builder: (context) => EditDogScreen(dog: _dog),
       ),
     );
 
-    // 10. 만약 '저장'에 성공해서 Dog 객체가 반환되었다면
     if (result != null && result is Dog) {
       setState(() {
-        _dog = result; // 👈 11. 화면의 '상태'를 새 Dog 객체로 업데이트 (새로고침)
-        _hasBeenEdited = true; // 👈 12. 홈 화면도 새로고침하라고 플래그 설정
+        _dog = result;
+        _hasBeenEdited = true;
       });
     }
   }
 
-
   @override
   Widget build(BuildContext context) {
-    // 13. ⭐️ [수정] widget.dog -> _dog (State 변수 사용)
-    final imageUrl = _dog.profileImageUrl;
-    final fullImageUrl = (imageUrl != null && imageUrl.isNotEmpty)
-        ? '${AppConfig.baseUrl}$imageUrl'
-        : null;
+    // 1. 원본 URL 가져오기
+    final String? rawUrl = _dog.profileImageUrl;
 
-    // 14. ⭐️ [신규] 뒤로가기 버튼을 눌렀을 때 홈 화면에 신호(true)를 주기 위한 PopScope
+    // 2. URL 종류에 따라 처리 (외부 링크 vs 내부 파일)
+    String? fullImageUrl;
+    if (rawUrl != null && rawUrl.isNotEmpty) {
+      if (rawUrl.startsWith('http')) {
+        fullImageUrl = rawUrl; // 이미 http로 시작하면 그대로 사용
+      } else {
+        fullImageUrl = '${AppConfig.baseUrl}$rawUrl'; // 아니면 내 서버 주소 붙이기
+      }
+    }
+
     return PopScope(
-      // 15. 이 화면이 닫힐 때
       onPopInvoked: (didPop) {
         if (didPop) {
-          // 16. 만약 수정이 일어났었다면(true), 홈 화면에 'true'를 반환
           if (_hasBeenEdited) {
-            Navigator.pop(context, true);
+            // 이미 pop된 후에는 값을 반환할 수 없으므로,
+            // pop하기 전에 Navigator.pop(context, true)를 호출하는 방식이 더 좋습니다.
+            // 하지만 여기서는 시스템 뒤로가기 버튼 대응을 위해 놔둡니다.
           }
         }
       },
       child: Scaffold(
-        backgroundColor: Colors.grey[900],
+        backgroundColor: const Color(0xFFF8F9FD), // 밝은 배경
         appBar: AppBar(
-          title: Text('${_dog.name}의 상세 정보'), // 👈 widget.dog -> _dog
-          backgroundColor: Colors.grey[900],
-          foregroundColor: Colors.white,
+          title: Text('${_dog.name}의 상세 정보'),
+          backgroundColor: Colors.white,
+          foregroundColor: Colors.black87,
+          elevation: 0,
           actions: [
             IconButton(
               icon: const Icon(Icons.edit_outlined),
@@ -155,49 +150,51 @@ class _DogDetailScreenState extends State<DogDetailScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // --- 1. 프로필 사진 ---
               Center(
                 child: CircleAvatar(
                   radius: 80,
-                  backgroundColor: Colors.grey[800],
+                  backgroundColor: Colors.grey[200],
                   backgroundImage: (fullImageUrl != null)
                       ? NetworkImage(fullImageUrl)
                       : null,
                   child: (fullImageUrl == null)
-                      ? const Icon(Icons.pets, size: 80, color: Colors.white70)
+                      ? const Icon(Icons.pets, size: 60, color: Colors.grey)
                       : null,
                 ),
               ),
               const SizedBox(height: 24),
               Center(
                 child: Text(
-                  _dog.name, // 👈 widget.dog -> _dog
+                  _dog.name,
                   style: const TextStyle(
-                    color: Colors.white,
+                    color: Colors.black87,
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
               ),
               const SizedBox(height: 30),
-
-              // --- 2. 상세 정보 카드 ---
               Card(
-                color: Colors.grey[800],
+                color: Colors.white,
+                elevation: 2,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(20),
                 ),
                 child: Padding(
-                  padding: const EdgeInsets.all(20.0),
+                  padding: const EdgeInsets.all(24.0),
                   child: Column(
                     children: [
-                      // 17. ⭐️ [수정] widget.dog -> _dog
-                      _buildInfoRow(Icons.cake, '생년월일', _dog.birthDate),
-                      _buildInfoRow(Icons.pets, '견종', _dog.breed),
-                      _buildInfoRow(Icons.wc, '성별', _dog.gender == 'male' ? '남아' : '여아'),
-                      _buildInfoRow(Icons.health_and_safety, '중성화',
+                      _buildInfoRow(Icons.cake_outlined, '생년월일', _dog.birthDate),
+                      const Divider(),
+                      _buildInfoRow(Icons.pets_outlined, '견종', _dog.breed),
+                      const Divider(),
+                      _buildInfoRow(Icons.transgender, '성별',
+                          _dog.gender == 'male' ? '남아' : (_dog.gender == 'female' ? '여아' : '미등록')),
+                      const Divider(),
+                      _buildInfoRow(Icons.healing_outlined, '중성화',
                           _dog.isNeutered == true ? '완료' : '미완료'),
-                      _buildInfoRow(Icons.monitor_weight, '체중',
+                      const Divider(),
+                      _buildInfoRow(Icons.monitor_weight_outlined, '체중',
                           _dog.weight != null ? '${_dog.weight} kg' : null),
                     ],
                   ),
@@ -210,7 +207,6 @@ class _DogDetailScreenState extends State<DogDetailScreen> {
     );
   }
 
-  // 18. [수정] _buildInfoRow 헬퍼 위젯을 State 클래스 안으로 이동
   Widget _buildInfoRow(IconData icon, String label, String? value) {
     final displayValue = (value == null || value.isEmpty) ? '정보 없음' : value;
 
@@ -218,12 +214,12 @@ class _DogDetailScreenState extends State<DogDetailScreen> {
       padding: const EdgeInsets.symmetric(vertical: 12.0),
       child: Row(
         children: [
-          Icon(icon, color: Colors.white70, size: 20),
+          Icon(icon, color: Colors.grey[600], size: 22),
           const SizedBox(width: 16),
           Text(
             label,
             style: const TextStyle(
-              color: Colors.white70,
+              color: Colors.grey,
               fontSize: 16,
               fontWeight: FontWeight.w500,
             ),
@@ -232,7 +228,7 @@ class _DogDetailScreenState extends State<DogDetailScreen> {
           Text(
             displayValue,
             style: const TextStyle(
-              color: Colors.white,
+              color: Colors.black87,
               fontSize: 16,
               fontWeight: FontWeight.bold,
             ),

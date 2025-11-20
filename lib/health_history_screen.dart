@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:fl_chart/fl_chart.dart'; // 👈 1. 차트 라이브러리
-import 'package:intl/intl.dart';         // 👈 2. 날짜 포맷팅
+import 'package:intl/intl.dart';
+import 'package:fl_chart/fl_chart.dart'; // 👈 차트 라이브러리 임포트
 import 'app_config.dart';
 import 'models/dog.dart';
 import 'models/health_check.dart';
@@ -21,10 +21,6 @@ class _HealthHistoryScreenState extends State<HealthHistoryScreen> {
   List<HealthCheck> _healthChecks = [];
   bool _isLoading = true;
 
-  // 안드로이드 에뮬레이터 기준 IP
-  
-  // (데스크탑: "http://localhost:8080")
-
   @override
   void initState() {
     super.initState();
@@ -32,41 +28,29 @@ class _HealthHistoryScreenState extends State<HealthHistoryScreen> {
   }
 
   Future<void> _fetchHealthChecks() async {
-    setState(() {
-      _isLoading = true;
-    });
-
+    setState(() { _isLoading = true; });
     final url = Uri.parse('${AppConfig.baseUrl}/api/dogs/${widget.dog.id}/health-checks');
     try {
       final response = await http.get(url);
       if (!mounted) return;
-
       if (response.statusCode == 200) {
-        final List<dynamic> responseData =
-        jsonDecode(utf8.decode(response.bodyBytes));
+        final List<dynamic> responseData = jsonDecode(utf8.decode(response.bodyBytes));
         setState(() {
-          _healthChecks =
-              responseData.map((data) => HealthCheck.fromJson(data)).toList();
+          _healthChecks = responseData.map((data) => HealthCheck.fromJson(data)).toList();
           _isLoading = false;
         });
       } else {
-        print('건강 기록 로드 실패: ${response.statusCode}');
         setState(() { _isLoading = false; });
       }
     } catch (e) {
-      print('건강 기록 로드 에러: $e');
-      if (mounted) {
-        setState(() { _isLoading = false; });
-      }
+      if (mounted) setState(() { _isLoading = false; });
     }
   }
 
-  void _navigateToQuestionnaire() {
+  void _navigateToHealthSurvey() {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => QuestionnaireScreen(dog: widget.dog),
-      ),
+      MaterialPageRoute(builder: (context) => QuestionnaireScreen(dog: widget.dog)),
     ).then((result) {
       if (result == true) {
         _fetchHealthChecks();
@@ -74,170 +58,119 @@ class _HealthHistoryScreenState extends State<HealthHistoryScreen> {
     });
   }
 
-  String _formatDateTime(DateTime dt) {
-    return "${dt.year}년 ${dt.month}월 ${dt.day}일";
-  }
-
-  // 점수에 따른 색상 (차트 및 리스트 공용)
-  Color _getScoreColor(int score) {
-    if (score <= 5) return Colors.greenAccent;
-    if (score <= 15) return Colors.orangeAccent;
-    return Colors.redAccent;
-  }
-
-  Widget _buildScoreIcon(int score) {
-    IconData icon;
-    Color color = _getScoreColor(score);
-    if (score <= 5) {
-      icon = Icons.check_circle;
-    } else if (score <= 15) {
-      icon = Icons.warning_amber_rounded;
-    } else {
-      icon = Icons.dangerous_rounded;
-    }
-    return Icon(icon, color: color, size: 40);
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[900],
+      backgroundColor: const Color(0xFFF8F9FD),
       appBar: AppBar(
-        title: Text("'${widget.dog.name}'의 건강 기록"),
-        backgroundColor: Colors.grey[900],
-        foregroundColor: Colors.white,
+        title: Text('${widget.dog.name}의 건강 기록'),
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black87,
+        elevation: 1,
       ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _healthChecks.isEmpty
+          ? _buildEmptyState()
+          : SingleChildScrollView(
+        padding: const EdgeInsets.all(20.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _buildChartCard(),
+            const SizedBox(height: 25),
+            _buildStartNewCheckButton(),
+            const SizedBox(height: 25),
+            const Text('과거 건강 기록', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87)),
+            const SizedBox(height: 15),
+            ..._healthChecks.map((check) => _buildHealthCheckItem(check)).toList(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // 3. [신규] 차트 위젯 추가
-          if (!_isLoading && _healthChecks.isNotEmpty)
-            _buildHealthChartCard(),
-
-          // 4. '새로운 건강 체크하기' 버튼
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: ElevatedButton.icon(
-              onPressed: _navigateToQuestionnaire,
-              icon: const Icon(Icons.check_circle_outline),
-              label: const Text('새로운 건강 상태 체크하기'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blueAccent,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
+          Icon(Icons.pets, size: 60, color: Colors.grey[300]),
+          const SizedBox(height: 20),
+          const Text(
+            '아직 건강 기록이 없습니다.\n첫 검사를 시작해 보세요!',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 16, color: Colors.grey),
           ),
-
-          // 5. 과거 기록 리스트
-          Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator(color: Colors.white))
-                : _buildHistoryList(),
-          ),
+          const SizedBox(height: 30),
+          _buildStartNewCheckButton(),
         ],
       ),
     );
   }
 
-  // 6. [신규] 차트 UI 빌더
-  Widget _buildHealthChartCard() {
-    // (1) 차트용 데이터 준비: 최신순 -> 오래된순으로 뒤집어서 시간 흐름대로 정렬
-    final chartData = _healthChecks.reversed.toList();
+  Widget _buildChartCard() {
+    // 차트 데이터 구성 (최근 5개 기록)
+    List<HealthCheck> recentChecks = _healthChecks.reversed.take(5).toList(); // 최신순으로 정렬 후 5개
+    List<FlSpot> spots = [];
+    List<String> bottomTitles = [];
+
+    for (int i = 0; i < recentChecks.length; i++) {
+      spots.add(FlSpot(i.toDouble(), recentChecks[i].totalScore.toDouble()));
+      bottomTitles.add(DateFormat('MM/dd').format(recentChecks[i].checkDate));
+    }
 
     return Container(
-      height: 250, // 차트 높이
-      margin: const EdgeInsets.symmetric(horizontal: 16.0),
-      padding: const EdgeInsets.all(16.0),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.grey[850],
-        borderRadius: BorderRadius.circular(16),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 15, offset: const Offset(0, 8))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            "건강 점수 변화",
-            style: TextStyle(color: Colors.white70, fontSize: 14),
-          ),
+          const Text('건강 점수 변화', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87)),
           const SizedBox(height: 20),
-          Expanded(
+          SizedBox(
+            height: 200,
             child: LineChart(
               LineChartData(
-                minY: 0,
-                maxY: 25, // 점수 최대값 (질문 5개 * 5점 = 25점)
-                gridData: const FlGridData(show: false), // 격자 숨김
+                gridData: FlGridData(show: false),
                 titlesData: FlTitlesData(
-                  topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
                   leftTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      interval: 5, // 5점 단위 표시
-                      getTitlesWidget: (value, meta) {
-                        return Text(
-                          value.toInt().toString(),
-                          style: const TextStyle(color: Colors.grey, fontSize: 12),
-                        );
-                      },
-                      reservedSize: 30,
-                    ),
+                    sideTitles: SideTitles(showTitles: true, reservedSize: 40),
                   ),
                   bottomTitles: AxisTitles(
                     sideTitles: SideTitles(
                       showTitles: true,
-                      interval: 1,
+                      reservedSize: 30,
                       getTitlesWidget: (value, meta) {
-                        int index = value.toInt();
-                        // 데이터 포인트가 너무 많으면 간격 조정 필요 (여기선 단순화)
-                        if (index >= 0 && index < chartData.length) {
-                          DateTime date = chartData[index].checkDate;
+                        if (value.toInt() < bottomTitles.length) {
                           return Padding(
                             padding: const EdgeInsets.only(top: 8.0),
-                            child: Text(
-                              DateFormat('MM/dd').format(date), // 날짜 포맷 (월/일)
-                              style: const TextStyle(color: Colors.grey, fontSize: 10),
-                            ),
+                            child: Text(bottomTitles[value.toInt()], style: const TextStyle(color: Colors.grey, fontSize: 10)),
                           );
                         }
                         return const Text('');
                       },
                     ),
                   ),
+                  rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
                 ),
-                borderData: FlBorderData(
-                  show: true,
-                  border: const Border(
-                    bottom: BorderSide(color: Colors.white10),
-                    left: BorderSide(color: Colors.white10),
-                  ),
-                ),
+                borderData: FlBorderData(show: false),
                 lineBarsData: [
                   LineChartBarData(
-                    spots: chartData.asMap().entries.map((entry) {
-                      return FlSpot(entry.key.toDouble(), entry.value.totalScore.toDouble());
-                    }).toList(),
-                    isCurved: true, // 곡선 그래프
-                    color: Colors.blueAccent,
+                    spots: spots,
+                    isCurved: true,
+                    color: Theme.of(context).primaryColor,
                     barWidth: 3,
                     isStrokeCapRound: true,
-                    dotData: FlDotData(
-                      show: true,
-                      getDotPainter: (spot, percent, barData, index) {
-                        return FlDotCirclePainter(
-                          radius: 4,
-                          color: Colors.white,
-                          strokeWidth: 2,
-                          strokeColor: Colors.blueAccent,
-                        );
-                      },
-                    ),
+                    dotData: FlDotData(show: true),
                     belowBarData: BarAreaData(
                       show: true,
-                      color: Colors.blueAccent.withOpacity(0.2), // 그래프 아래 채우기
+                      color: Theme.of(context).primaryColor.withOpacity(0.1),
                     ),
                   ),
                 ],
@@ -249,58 +182,91 @@ class _HealthHistoryScreenState extends State<HealthHistoryScreen> {
     );
   }
 
-  Widget _buildHistoryList() {
-    if (_healthChecks.isEmpty) {
-      return const Center(
-        child: Text(
-          '저장된 건강 기록이 없습니다.\n위의 버튼을 눌러 첫 기록을 시작하세요.',
-          textAlign: TextAlign.center,
-          style: TextStyle(color: Colors.white70, fontSize: 16),
+  Widget _buildStartNewCheckButton() {
+    return SizedBox(
+      width: double.infinity,
+      height: 55,
+      child: ElevatedButton.icon(
+        onPressed: _navigateToHealthSurvey,
+        icon: const Icon(Icons.add_task),
+        label: const Text('새로운 건강 상태 체크하기', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFF6C63FF),
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+          elevation: 5,
+          shadowColor: const Color(0xFF6C63FF).withOpacity(0.4),
         ),
-      );
+      ),
+    );
+  }
+
+  Widget _buildHealthCheckItem(HealthCheck check) {
+    String dateStr = DateFormat('yyyy년 MM월 dd일').format(check.checkDate);
+    Color iconColor;
+    IconData iconData;
+    String statusText;
+
+    final imageUrl = check.dogProfileImageUrl;
+    final fullImageUrl = (imageUrl != null && imageUrl.isNotEmpty)
+        ? '${AppConfig.baseUrl}$imageUrl'
+        : null;
+
+    if (check.totalScore <= 5) {
+      iconColor = Colors.green;
+      iconData = Icons.check_circle_outline;
+      statusText = '매우 건강';
+    } else if (check.totalScore <= 15) {
+      iconColor = Colors.orange;
+      iconData = Icons.warning_amber_outlined;
+      statusText = '주의 필요';
+    } else {
+      iconColor = Colors.red;
+      iconData = Icons.error_outline;
+      statusText = '병원 방문 권유';
     }
 
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-      itemCount: _healthChecks.length,
-      itemBuilder: (context, index) {
-        final check = _healthChecks[index];
-        return Card(
-          color: Colors.grey[800],
-          margin: const EdgeInsets.only(bottom: 12),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: ListTile(
-            contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-            leading: _buildScoreIcon(check.totalScore),
-            title: Text(
-              '${check.totalScore}점',
-              style: TextStyle(
-                color: _getScoreColor(check.totalScore),
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
+    return Container(
+      margin: const EdgeInsets.only(bottom: 15),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(15),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))],
+      ),
+      child: ListTile(
+        contentPadding: const EdgeInsets.all(20),
+        leading: CircleAvatar(
+          radius: 25,
+          backgroundColor: Colors.grey[200], // 배경색 변경
+          // 👇 [수정] 이미지가 있으면 NetworkImage, 없으면 아이콘
+          backgroundImage: fullImageUrl != null ? NetworkImage(fullImageUrl) : null,
+          child: fullImageUrl == null
+              ? Icon(iconData, color: iconColor, size: 28) // 이미지 없으면 기존 아이콘 사용
+              : null,
+        ),
+        title: Text('건강 점수: ${check.totalScore}점', style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Colors.black87)),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 5),
+            Text(dateStr, style: const TextStyle(fontSize: 14, color: Colors.grey)),
+          ],
+        ),
+        trailing: Icon(Icons.arrow_forward_ios_rounded, size: 18, color: Colors.grey[400]),
+
+        // ⭐️ [핵심 수정] onTap 이벤트 추가 ⭐️
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => HealthResultScreen(
+                dog: widget.dog,
+                pastCheck: check,
               ),
             ),
-            subtitle: Text(
-              _formatDateTime(check.checkDate),
-              style: const TextStyle(color: Colors.white70),
-            ),
-            trailing: const Icon(Icons.arrow_forward_ios, color: Colors.white54, size: 16),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => HealthResultScreen(
-                    dog: widget.dog,
-                    pastCheck: check,
-                  ),
-                ),
-              );
-            },
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 }

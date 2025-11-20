@@ -2,8 +2,8 @@ class HealthCheck {
   final int id;
   final DateTime checkDate;
   final int totalScore;
-  final String? dogName;
   final String? dogProfileImageUrl;
+  final String? dogName;
 
   // 5단계 답변 텍스트
   final String answerStep1Appetite;
@@ -21,8 +21,8 @@ class HealthCheck {
     required this.answerStep3Digestive,
     required this.answerStep4Urinary,
     required this.answerStep5Skin,
-    required this.dogName,
-    required this.dogProfileImageUrl,
+    this.dogProfileImageUrl,
+    this.dogName,
   });
 
   // JSON(Map)을 HealthCheck 객체로 변환
@@ -37,8 +37,8 @@ class HealthCheck {
       answerStep3Digestive: json['answerStep3Digestive'],
       answerStep4Urinary: json['answerStep4Urinary'],
       answerStep5Skin: json['answerStep5Skin'],
-      dogName: json['dogName'],
       dogProfileImageUrl: json['dogProfileImageUrl'],
+      dogName: json['dogName'],
     );
   }
 }

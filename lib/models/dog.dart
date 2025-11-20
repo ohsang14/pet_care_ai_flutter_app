@@ -19,13 +19,12 @@ class Dog {
     this.weight,
   });
 
-  // 서버에서 받은 JSON(Map)을 Dog 객체로 변환하는 팩토리 생성자
   factory Dog.fromJson(Map<String, dynamic> json) {
     return Dog(
       id: json['id'],
       name: json['name'],
       birthDate: json['birthDate'],
-      profileImageUrl: json['profileImageUrl'],
+      profileImageUrl: json['profileImageUrl'], // 👈 매핑 확인
       breed: json['breed'],
       gender: json['gender'],
       isNeutered: json['isNeutered'],

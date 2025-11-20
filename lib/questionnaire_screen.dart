@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'models/dog.dart';
-import 'health_result_screen.dart'; // 👈 (다음 단계에 만들) 결과 화면
-import 'models/health_check_data.dart'; // 👈 (바로 다음에 만들) 질문/답변 데이터 모델
+import 'health_result_screen.dart';
+import 'models/health_check_data.dart';
 
 class QuestionnaireScreen extends StatefulWidget {
   final Dog dog;
@@ -12,86 +12,63 @@ class QuestionnaireScreen extends StatefulWidget {
 }
 
 class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
-  // PageView를 제어하기 위한 컨트롤러
   final PageController _pageController = PageController();
-  // 현재 페이지 인덱스
-  int _currentPageIndex = 0;
+  int _currentPage = 0;
 
-  // 1. 5단계 질문/답변 데이터 리스트 (데이터는 별도 파일로 분리)
+  // 질문 데이터 가져오기
   final List<QuestionnaireData> _questions = getQuestionnaireData();
 
-  // 2. 사용자가 선택한 답변 인덱스를 저장할 리스트 (초기값 -1)
-  late List<int> _selectedAnswers;
+  // 선택한 답변 인덱스 저장 (-1은 미선택)
+  late List<int> _answers;
 
   @override
   void initState() {
     super.initState();
-    // 5개 질문에 대해 "아직 선택 안 함(-1)"으로 초기화
-    _selectedAnswers = List<int>.filled(_questions.length, -1);
+    _answers = List.filled(_questions.length, -1);
   }
 
-  @override
-  void dispose() {
-    _pageController.dispose();
-    super.dispose();
-  }
-
-  // '다음' 버튼을 눌렀을 때
+  // 다음 페이지로 이동
   void _nextPage() {
-    // 3. 답변을 선택하지 않으면 다음으로 넘어가지 않음
-    if (_selectedAnswers[_currentPageIndex] == -1) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('답변을 선택해주세요.')),
-      );
-      return;
-    }
+    if (_answers[_currentPage] == -1) return; // 답변 선택 안 했으면 무시
 
-    // 4. 마지막 질문(4번 인덱스)이 아니면 다음 페이지로
-    if (_currentPageIndex < _questions.length - 1) {
+    if (_currentPage < _questions.length - 1) {
+      // 다음 질문으로
       _pageController.nextPage(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeIn,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.ease
       );
     } else {
-      // 5. 마지막 질문이면 '결과 보기' 실행
-      _showResultScreen();
+      // 마지막 질문이면 결과 처리
+      _finish();
     }
   }
 
-  // '이전' 버튼을 눌렀을 때
-  void _previousPage() {
-    _pageController.previousPage(
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeIn,
-    );
-  }
-
-  // 6. 결과 화면으로 이동 (계산 로직)
-  void _showResultScreen() {
+  // ⭐️ [핵심] 결과 계산 및 화면 이동 (여기가 비어있어서 안 됐던 겁니다!)
+  void _finish() {
     int totalScore = 0;
     List<String> selectedAnswerTexts = [];
     List<HealthCheckResultItem> analysisItems = [];
 
-    // 7. 점수 계산 및 답변 텍스트 취합
     for (int i = 0; i < _questions.length; i++) {
-      int selectedOptionIndex = _selectedAnswers[i];
-      QuestionOption selectedOption = _questions[i].options[selectedOptionIndex];
+      int selectedIndex = _answers[i];
+      QuestionOption selectedOption = _questions[i].options[selectedIndex];
 
-      // 총점 합산
+      // 1. 총점 계산
       totalScore += selectedOption.score;
 
-      // 답변 텍스트 (예: "평소보다 적게 먹어요")
+      // 2. 저장할 답변 텍스트 수집
       selectedAnswerTexts.add(selectedOption.text);
 
-      // '상세 분석' 항목 추가 (점수가 0점보다 큰, 즉 '나쁜' 항목만)
+      // 3. 점수가 높은(나쁜) 항목은 상세 분석 리스트에 추가
       if (selectedOption.score > 0) {
         analysisItems.add(HealthCheckResultItem(
-          question: _questions[i].questionTitle, // 예: "식욕 및 음수량"
+          question: _questions[i].questionTitle,
           answer: selectedOption.text,
         ));
       }
     }
 
+    // 4. 결과 화면으로 이동 (HealthResultScreen)
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -102,10 +79,9 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
           allAnswerTexts: selectedAnswerTexts,
         ),
       ),
-    ).then((resultFromHealthResult) {
-      // 9. ⭐️ [추가] HealthResultScreen이 pop(true)로 닫혔다면,
-      //    그 'true' 값을 QuestionnaireScreen도 pop하여 HistoryScreen으로 전달
-      if (resultFromHealthResult == true) {
+    ).then((result) {
+      // 결과 화면에서 '저장'하고 돌아왔다면(true), 이 화면도 닫고 목록 화면으로 복귀
+      if (result == true) {
         Navigator.pop(context, true);
       }
     });
@@ -113,174 +89,99 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // 현재 진행률 (예: 1/5 -> 20%)
-    double progress = (_currentPageIndex + 1) / _questions.length;
-
     return Scaffold(
-      backgroundColor: Colors.grey[900],
+      backgroundColor: const Color(0xFFF8F9FD),
       appBar: AppBar(
-        title: const Text('건강 상태 체크'),
-        backgroundColor: Colors.grey[900],
-        foregroundColor: Colors.white,
+        title: const Text('건강 체크'),
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black87,
+        elevation: 1,
       ),
       body: Column(
         children: [
-          // 1. 상단 진행률 표시줄 (ProgressBar)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  '질문 ${(_currentPageIndex + 1)} / ${_questions.length}',
-                  style: const TextStyle(color: Colors.white70),
-                ),
-                const SizedBox(height: 8),
-                LinearProgressIndicator(
-                  value: progress,
-                  backgroundColor: Colors.grey[700],
-                  color: Colors.blueAccent,
-                  minHeight: 8,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-              ],
-            ),
+          // 상단 진행바
+          LinearProgressIndicator(
+            value: (_currentPage + 1) / _questions.length,
+            backgroundColor: Colors.grey[200],
+            color: const Color(0xFF6C63FF), // 포인트 컬러
+            minHeight: 6,
           ),
-
-          // 2. 질문 페이지 (PageView)
           Expanded(
             child: PageView.builder(
               controller: _pageController,
+              physics: const NeverScrollableScrollPhysics(), // 스와이프 금지 (버튼으로만 이동)
               itemCount: _questions.length,
-              // 👈 좌우 스와이프로 페이지 넘기기 비활성화
-              physics: const NeverScrollableScrollPhysics(),
-              onPageChanged: (index) {
-                setState(() {
-                  _currentPageIndex = index;
-                });
-              },
-              itemBuilder: (context, index) {
-                // 각 페이지 UI 생성
-                return _buildQuestionPage(_questions[index], index);
-              },
+              onPageChanged: (idx) => setState(() => _currentPage = idx),
+              itemBuilder: (ctx, idx) => _buildQuestionCard(_questions[idx], idx),
             ),
           ),
-
-          // 3. 하단 네비게이션 버튼 (이전, 다음)
-          _buildNavigationButtons(),
         ],
       ),
     );
   }
 
-  // 각 설문 페이지의 UI를 그리는 위젯
-  Widget _buildQuestionPage(QuestionnaireData data, int pageIndex) {
-    return Padding(
-      padding: const EdgeInsets.all(20.0),
-      child: Container(
-        padding: const EdgeInsets.all(24.0),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(data.icon, color: Colors.blueAccent, size: 28),
-                const SizedBox(width: 10),
-                Text(
-                  data.questionTitle, // 예: "식욕 및 음수량"
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black,
-                  ),
-                ),
-              ],
-            ),
-            const Divider(height: 30),
-            Text(
-              data.questionText, // 예: "반려견의 식욕과 물 마시는 양은..."
-              style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black,
-                  height: 1.4
-              ),
-            ),
-            const SizedBox(height: 20),
-
-            // 4. 답변 선택 옵션 (RadioListTile)
-            Expanded(
-              child: ListView.builder(
-                itemCount: data.options.length,
-                itemBuilder: (context, optionIndex) {
-                  final option = data.options[optionIndex];
-                  return RadioListTile<int>(
-                    title: Text(option.text, style: const TextStyle(fontSize: 16, height: 1.5)),
-                    value: optionIndex, // 이 옵션의 인덱스
-                    groupValue: _selectedAnswers[pageIndex], // 현재 페이지에서 선택된 인덱스
-                    onChanged: (value) {
-                      setState(() {
-                        _selectedAnswers[pageIndex] = value!;
-                      });
-                    },
-                    activeColor: Colors.blueAccent,
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // 하단 '이전' / '다음' 버튼 위젯
-  Widget _buildNavigationButtons() {
-    bool isLastPage = _currentPageIndex == _questions.length - 1;
-
-    return Padding(
-      padding: const EdgeInsets.all(20.0),
-      child: Row(
+  // 질문 카드 UI
+  Widget _buildQuestionCard(QuestionnaireData data, int index) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // '이전' 버튼 (첫 페이지가 아닐 때만 보임)
-          if (_currentPageIndex > 0)
-            Expanded(
-              child: ElevatedButton(
-                onPressed: _previousPage,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.grey[700],
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: const Text('이전', style: TextStyle(fontSize: 16)),
-              ),
-            ),
+          Text('질문 ${index + 1}', style: const TextStyle(color: Color(0xFF6C63FF), fontWeight: FontWeight.bold)),
+          const SizedBox(height: 10),
+          Text(data.questionTitle, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black87)),
+          const SizedBox(height: 10),
+          Text(data.questionText, style: const TextStyle(fontSize: 16, color: Colors.grey)),
+          const SizedBox(height: 30),
 
-          if (_currentPageIndex > 0)
-            const SizedBox(width: 10),
+          // 답변 리스트 생성
+          ...List.generate(data.options.length, (optIdx) {
+            final option = data.options[optIdx];
+            final isSelected = _answers[index] == optIdx;
 
-          // '다음' 또는 '결과 보기' 버튼
-          Expanded(
-            child: ElevatedButton(
-              onPressed: _nextPage,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: isLastPage ? Colors.green : Colors.blueAccent, // 마지막엔 초록색
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
+            return GestureDetector(
+              onTap: () => setState(() => _answers[index] = optIdx),
+              child: Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: isSelected ? const Color(0xFF6C63FF) : Colors.white,
                   borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: isSelected ? const Color(0xFF6C63FF) : Colors.grey.shade300),
+                  boxShadow: [if(!isSelected) BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 5)],
                 ),
+                child: Row(
+                  children: [
+                    Icon(
+                      isSelected ? Icons.check_circle : Icons.circle_outlined,
+                      color: isSelected ? Colors.white : Colors.grey,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(child: Text(option.text, style: TextStyle(fontSize: 16, color: isSelected ? Colors.white : Colors.black87))),
+                  ],
+                ),
+              ),
+            );
+          }),
+
+          const SizedBox(height: 30),
+
+          // 다음/결과보기 버튼
+          SizedBox(
+            width: double.infinity,
+            height: 55,
+            child: ElevatedButton(
+              // 답변을 선택해야만 버튼 활성화
+              onPressed: _answers[index] != -1 ? _nextPage : null,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF6C63FF),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                disabledBackgroundColor: Colors.grey[300],
               ),
               child: Text(
-                isLastPage ? '결과 보기' : '다음', // 👈 마지막 페이지에서 텍스트 변경
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                index == _questions.length - 1 ? '결과 보기' : '다음',
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
             ),
           ),

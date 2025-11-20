@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'app_config.dart';
+import 'analysis_result_screen.dart';
 import 'models/analysis_reslult.dart';
-import 'models/analysis_result_screen.dart'; // 👈 오타 주의 (파일명 확인)
 
 class AnalysisScreen extends StatefulWidget {
   const AnalysisScreen({super.key});
@@ -18,7 +18,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
   XFile? _image;
   final ImagePicker _picker = ImagePicker();
   bool _isLoading = false;
-  String _petType = "dog";
+  String _petType = "dog"; // 기본값 강아지
 
   Future<void> _pickImage(ImageSource source) async {
     try {
@@ -42,13 +42,19 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
       if (!mounted) return;
       if (response.statusCode == 200) {
         final List<dynamic> responseData = jsonDecode(utf8.decode(response.bodyBytes));
+
+        // ⭐️ [중요] 분석 결과 생성
         final results = responseData.map((data) => AnalysisResult.fromJson(data)).toList();
-        Navigator.push(context, MaterialPageRoute(builder: (context) => AnalysisResultScreen(results: results)));
+
+        Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => AnalysisResultScreen(results: results))
+        );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('분석 실패')));
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('에러 발생')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('에러: $e')));
     } finally {
       if (mounted) setState(() { _isLoading = false; });
     }
@@ -57,7 +63,13 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('AI 품종 분석')),
+      backgroundColor: const Color(0xFFF8F9FD), // 밝은 배경
+      appBar: AppBar(
+        title: const Text('AI 품종 분석'),
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black87,
+        elevation: 1,
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24.0),
         child: Column(
@@ -69,27 +81,54 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 30),
+
             _buildPetTypeSelector(),
             const SizedBox(height: 30),
-            _buildImageUploadArea(),
+
+            // 📸 이미지 업로드 영역 (미리보기 포함)
+            Container(
+              height: 320,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: Colors.grey[200]!, width: 2),
+                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4))],
+              ),
+              child: _image == null
+                  ? Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.add_a_photo_outlined, size: 60, color: Colors.grey[300]),
+                  const SizedBox(height: 16),
+                  Text('터치하여 사진 선택', style: TextStyle(color: Colors.grey[400], fontSize: 16)),
+                ],
+              )
+                  : ClipRRect(
+                borderRadius: BorderRadius.circular(22),
+                child: Image.file(File(_image!.path), fit: BoxFit.cover),
+              ),
+            ),
             const SizedBox(height: 30),
+
             Row(
               children: [
-                Expanded(child: _buildButton(icon: Icons.photo_library, label: '갤러리', onTap: () => _pickImage(ImageSource.gallery))),
+                Expanded(child: _buildActionButton(onPressed: () => _pickImage(ImageSource.gallery), icon: Icons.photo_library, label: '갤러리', backgroundColor: Colors.white, textColor: Colors.black87)),
                 const SizedBox(width: 16),
-                Expanded(child: _buildButton(icon: Icons.camera_alt, label: '카메라', onTap: () => _pickImage(ImageSource.camera))),
+                Expanded(child: _buildActionButton(onPressed: () => _pickImage(ImageSource.camera), icon: Icons.camera_alt, label: '카메라', backgroundColor: Colors.white, textColor: Colors.black87)),
               ],
             ),
             const SizedBox(height: 24),
+
             ElevatedButton(
               onPressed: _image == null || _isLoading ? null : _analyzeImage,
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF6C63FF),
+                backgroundColor: const Color(0xFF6C63FF), // 포인트 컬러
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 18),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 elevation: 5,
                 shadowColor: const Color(0xFF6C63FF).withOpacity(0.4),
+                disabledBackgroundColor: Colors.grey[300],
               ),
               child: _isLoading
                   ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
@@ -111,7 +150,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
       child: Row(
         children: [
           _buildTypeOption("강아지", Icons.pets, "dog"),
-          _buildTypeOption("고양이", Icons.flare, "cat"), // Icon: flare (임시)
+          _buildTypeOption("고양이", Icons.catching_pokemon, "cat"), // 아이콘 변경
         ],
       ),
     );
@@ -141,35 +180,13 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
     );
   }
 
-  Widget _buildImageUploadArea() {
-    return Container(
-      height: 320,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.grey[200]!, width: 2),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4))],
-      ),
-      child: _image == null
-          ? Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.add_a_photo_outlined, size: 60, color: Colors.grey[300]),
-          const SizedBox(height: 16),
-          Text('터치하여 사진 선택', style: TextStyle(color: Colors.grey[400], fontSize: 16)),
-        ],
-      )
-          : ClipRRect(borderRadius: BorderRadius.circular(22), child: Image.file(File(_image!.path), fit: BoxFit.cover)),
-    );
-  }
-
-  Widget _buildButton({required IconData icon, required String label, required VoidCallback onTap}) {
+  Widget _buildActionButton({required VoidCallback onPressed, required IconData icon, required String label, required Color backgroundColor, required Color textColor}) {
     return ElevatedButton.icon(
-      onPressed: onTap,
-      icon: Icon(icon, color: Colors.black87),
-      label: Text(label, style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.bold)),
+      onPressed: onPressed,
+      icon: Icon(icon, color: textColor),
+      label: Text(label, style: TextStyle(color: textColor, fontWeight: FontWeight.bold)),
       style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.white,
+        backgroundColor: backgroundColor,
         padding: const EdgeInsets.symmetric(vertical: 16),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: Colors.grey[300]!)),
         elevation: 0,
