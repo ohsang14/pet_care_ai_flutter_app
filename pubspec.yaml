@@ -65,10 +65,9 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
-  # To add assets to your application, add an assets section, like this:
-  # assets:
-  #   - images/a_dot_burr.jpeg
-  #   - images/a_dot_ham.jpeg
+#  assets:
+#     - assets/icon/
+#     - assets/splash/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
@@ -105,13 +104,13 @@ flutter_launcher_icons:
   adaptive_icon_foreground: "assets/icon/icon.png"
 
 
-flutter_native_splash:
-  color: "#F8F9FD" # 앱 배경색과 동일하게
-  image: "assets/splash/logo.png" # 기본 로고
-
-  android_12:
-    image: "assets/splash/logo.png"
-    color: "#F8F9FD"
-    icon_background_color: "#F8F9FD"
-
-  fullscreen: true
+#flutter_native_splash:
+#  color: "#F8F9FD" # 앱 배경색과 동일하게
+#  image: "assets/splash/logo.png" # 기본 로고
+#
+#  android_12:
+#    image: "assets/splash/logo.png"
+#    color: "#F8F9FD"
+#    icon_background_color: "#F8F9FD"
+#
+#  fullscreen: true
