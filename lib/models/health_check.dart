@@ -30,7 +30,6 @@ class HealthCheck {
     return HealthCheck(
       id: json['id'],
       checkDate: DateTime.parse(json['checkDate']),
-      // ISO 문자열을 DateTime으로
       totalScore: json['totalScore'],
       answerStep1Appetite: json['answerStep1Appetite'],
       answerStep2Activity: json['answerStep2Activity'],

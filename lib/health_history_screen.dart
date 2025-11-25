@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
-import 'package:fl_chart/fl_chart.dart'; // 👈 차트 라이브러리 임포트
+import 'package:fl_chart/fl_chart.dart';
 import 'app_config.dart';
 import 'models/dog.dart';
 import 'models/health_check.dart';
@@ -110,8 +110,7 @@ class _HealthHistoryScreenState extends State<HealthHistoryScreen> {
   }
 
   Widget _buildChartCard() {
-    // 차트 데이터 구성 (최근 5개 기록)
-    List<HealthCheck> recentChecks = _healthChecks.reversed.take(5).toList(); // 최신순으로 정렬 후 5개
+    List<HealthCheck> recentChecks = _healthChecks.reversed.take(5).toList();
     List<FlSpot> spots = [];
     List<String> bottomTitles = [];
 
@@ -205,25 +204,27 @@ class _HealthHistoryScreenState extends State<HealthHistoryScreen> {
     String dateStr = DateFormat('yyyy년 MM월 dd일').format(check.checkDate);
     Color iconColor;
     IconData iconData;
-    String statusText;
 
-    final imageUrl = check.dogProfileImageUrl;
-    final fullImageUrl = (imageUrl != null && imageUrl.isNotEmpty)
-        ? '${AppConfig.baseUrl}$imageUrl'
-        : null;
+    // ⭐️ [핵심 수정] 이미지 URL 처리 로직 (외부 vs 내부 구분)
+    final rawUrl = check.dogProfileImageUrl;
+    String? fullImageUrl;
+    if (rawUrl != null && rawUrl.isNotEmpty) {
+      if (rawUrl.startsWith('http')) {
+        fullImageUrl = rawUrl;
+      } else {
+        fullImageUrl = '${AppConfig.baseUrl}$rawUrl';
+      }
+    }
 
     if (check.totalScore <= 5) {
       iconColor = Colors.green;
       iconData = Icons.check_circle_outline;
-      statusText = '매우 건강';
     } else if (check.totalScore <= 15) {
       iconColor = Colors.orange;
       iconData = Icons.warning_amber_outlined;
-      statusText = '주의 필요';
     } else {
       iconColor = Colors.red;
       iconData = Icons.error_outline;
-      statusText = '병원 방문 권유';
     }
 
     return Container(
@@ -237,11 +238,11 @@ class _HealthHistoryScreenState extends State<HealthHistoryScreen> {
         contentPadding: const EdgeInsets.all(20),
         leading: CircleAvatar(
           radius: 25,
-          backgroundColor: Colors.grey[200], // 배경색 변경
-          // 👇 [수정] 이미지가 있으면 NetworkImage, 없으면 아이콘
+          backgroundColor: Colors.grey[200],
+          // ⭐️ 이미지가 있으면 사진을, 없으면 상태 아이콘을 표시
           backgroundImage: fullImageUrl != null ? NetworkImage(fullImageUrl) : null,
           child: fullImageUrl == null
-              ? Icon(iconData, color: iconColor, size: 28) // 이미지 없으면 기존 아이콘 사용
+              ? Icon(iconData, color: iconColor, size: 28) // 사진 없으면 상태 아이콘
               : null,
         ),
         title: Text('건강 점수: ${check.totalScore}점', style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Colors.black87)),
@@ -253,8 +254,6 @@ class _HealthHistoryScreenState extends State<HealthHistoryScreen> {
           ],
         ),
         trailing: Icon(Icons.arrow_forward_ios_rounded, size: 18, color: Colors.grey[400]),
-
-        // ⭐️ [핵심 수정] onTap 이벤트 추가 ⭐️
         onTap: () {
           Navigator.push(
             context,

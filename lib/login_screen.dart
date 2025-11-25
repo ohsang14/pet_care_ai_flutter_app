@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'app_config.dart'; // 👈 1. [추가] AppConfig import
-import 'member.dart';
+import 'models/member.dart';
 import 'main_screen.dart';
 
 class LoginScreen extends StatefulWidget {
