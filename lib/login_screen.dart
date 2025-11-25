@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
+import 'package:kakao_flutter_sdk/kakao_flutter_sdk.dart';
 import 'app_config.dart';
 import 'main_screen.dart';
 import 'models/member.dart';
@@ -86,12 +88,84 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  // 🟡 카카오 로그인 (나중에 구현할 함수)
-  void _kakaoLogin() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('카카오 로그인 기능은 준비 중입니다! 🚧')),
-    );
-    // TODO: 카카오 SDK 연동 예정
+  // 🟡 카카오 로그인 (수정됨)
+  Future<void> _kakaoLogin() async {
+    try {
+      // 1. 카카오톡 설치 여부 확인
+      bool isInstalled = await isKakaoTalkInstalled();
+      OAuthToken token;
+
+      if (isInstalled) {
+        try {
+          token = await UserApi.instance.loginWithKakaoTalk();
+        } catch (error) {
+          if (error is PlatformException && error.code == 'CANCELED') return;
+          token = await UserApi.instance.loginWithKakaoAccount();
+        }
+      } else {
+        token = await UserApi.instance.loginWithKakaoAccount();
+      }
+
+      print('카카오 인증 성공! 토큰: ${token.accessToken}');
+
+      // [중요] 이메일 조회 로직(UserApi.instance.me)은 제거합니다.
+      // 대신, 토큰을 그대로 백엔드 서버로 보냅니다.
+      if (!mounted) return;
+      await _sendKakaoTokenToServer(token.accessToken);
+
+    } catch (error) {
+      print('카카오 로그인 실패: $error');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('카카오 로그인에 실패했습니다.')),
+      );
+    }
+  }
+// [수정됨] 서버로 '토큰'을 전송하는 함수
+  Future<void> _sendKakaoTokenToServer(String accessToken) async {
+    setState(() { _isLoading = true; });
+
+    // 백엔드 엔드포인트 확인
+    final url = Uri.parse('${AppConfig.baseUrl}/api/members/kakao');
+
+    try {
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        // ⭐️ [핵심] 백엔드 DTO의 변수명(accessToken)과 정확히 일치시켜야 함!
+        body: jsonEncode({
+          'accessToken': accessToken,
+        }),
+      );
+
+      print('서버 응답 코드: ${response.statusCode}');
+      print('서버 응답 본문: ${utf8.decode(response.bodyBytes)}');
+
+      if (!mounted) return;
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        // 로그인 성공!
+        final responseData = jsonDecode(utf8.decode(response.bodyBytes));
+        final member = Member.fromJson(responseData);
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => MainScreen(member: member)),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('서버 로그인 실패: 잠시 후 다시 시도해주세요.'))
+        );
+      }
+    } catch (e) {
+      print('서버 통신 에러: $e');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('서버와 연결할 수 없습니다.'))
+      );
+    } finally {
+      if (mounted) setState(() { _isLoading = false; });
+    }
   }
 
   @override

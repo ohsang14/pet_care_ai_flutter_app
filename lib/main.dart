@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:kakao_flutter_sdk/kakao_flutter_sdk.dart';
 import 'login_screen.dart';
 
 void main() {
+  KakaoSdk.init(nativeAppKey: '9b11ffc9a57e419c6f691d892ca997aa');
+
   runApp(const PetCareApp());
 }
 
