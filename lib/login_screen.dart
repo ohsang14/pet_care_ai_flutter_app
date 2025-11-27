@@ -3,9 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:kakao_flutter_sdk/kakao_flutter_sdk.dart';
-import 'app_config.dart';
+import 'package:mypet/service/storage_service.dart';
+import '../app_config.dart';
 import 'main_screen.dart';
-import 'models/member.dart';
+import '../models/member.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -22,7 +23,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passwordController = TextEditingController();
   bool _isLoading = false;
 
-  // 이메일 로그인
+  // 📧 이메일 로그인
   Future<void> _emailLogin() async {
     if (_emailController.text.isEmpty || _passwordController.text.isEmpty) return;
     setState(() { _isLoading = true; });
@@ -43,6 +44,10 @@ class _LoginScreenState extends State<LoginScreen> {
       if (response.statusCode == 200) {
         final responseData = jsonDecode(utf8.decode(response.bodyBytes));
         final member = Member.fromJson(responseData);
+
+        // ⭐️ [추가됨] 이메일 로그인도 정보를 기기에 저장 (자동 로그인용)
+        await StorageService.saveMember(member);
+
         Navigator.pushReplacement(
           context, MaterialPageRoute(builder: (context) => MainScreen(member: member)),
         );
@@ -51,12 +56,13 @@ class _LoginScreenState extends State<LoginScreen> {
       }
     } catch (e) {
       print(e);
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('서버 연결 오류가 발생했습니다.')));
     } finally {
       if (mounted) setState(() { _isLoading = false; });
     }
   }
 
-  // 이메일 회원가입
+  // 📧 이메일 회원가입
   Future<void> _emailSignUp() async {
     if (_nameController.text.isEmpty || _emailController.text.isEmpty || _passwordController.text.isEmpty) return;
     setState(() { _isLoading = true; });
@@ -83,12 +89,13 @@ class _LoginScreenState extends State<LoginScreen> {
       }
     } catch (e) {
       print(e);
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('서버 연결 오류가 발생했습니다.')));
     } finally {
       if (mounted) setState(() { _isLoading = false; });
     }
   }
 
-  // 🟡 카카오 로그인 (수정됨)
+  // 🟡 카카오 로그인
   Future<void> _kakaoLogin() async {
     try {
       // 1. 카카오톡 설치 여부 확인
@@ -108,8 +115,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
       print('카카오 인증 성공! 토큰: ${token.accessToken}');
 
-      // [중요] 이메일 조회 로직(UserApi.instance.me)은 제거합니다.
-      // 대신, 토큰을 그대로 백엔드 서버로 보냅니다.
       if (!mounted) return;
       await _sendKakaoTokenToServer(token.accessToken);
 
@@ -121,25 +126,23 @@ class _LoginScreenState extends State<LoginScreen> {
       );
     }
   }
-// [수정됨] 서버로 '토큰'을 전송하는 함수
+
+  // 🟡 카카오 토큰 서버 전송
   Future<void> _sendKakaoTokenToServer(String accessToken) async {
     setState(() { _isLoading = true; });
 
-    // 백엔드 엔드포인트 확인
     final url = Uri.parse('${AppConfig.baseUrl}/api/members/kakao');
 
     try {
       final response = await http.post(
         url,
         headers: {'Content-Type': 'application/json'},
-        // ⭐️ [핵심] 백엔드 DTO의 변수명(accessToken)과 정확히 일치시켜야 함!
         body: jsonEncode({
           'accessToken': accessToken,
         }),
       );
 
       print('서버 응답 코드: ${response.statusCode}');
-      print('서버 응답 본문: ${utf8.decode(response.bodyBytes)}');
 
       if (!mounted) return;
 
@@ -147,6 +150,8 @@ class _LoginScreenState extends State<LoginScreen> {
         // 로그인 성공!
         final responseData = jsonDecode(utf8.decode(response.bodyBytes));
         final member = Member.fromJson(responseData);
+
+        await StorageService.saveMember(member);
 
         Navigator.pushReplacement(
           context,
@@ -171,14 +176,13 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FD), // 밝은 배경
+      backgroundColor: const Color(0xFFF8F9FD),
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // 로고 영역
               const Icon(Icons.pets, size: 60, color: Color(0xFF6C63FF)),
               const SizedBox(height: 16),
               const Text(
@@ -189,7 +193,6 @@ class _LoginScreenState extends State<LoginScreen> {
               const Text('우리 아이 건강 지킴이', style: TextStyle(color: Colors.grey, fontSize: 16)),
               const SizedBox(height: 40),
 
-              // 입력 폼 카드
               Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
@@ -199,7 +202,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 child: Column(
                   children: [
-                    // 탭 전환 (로그인 / 회원가입)
                     Row(
                       children: [
                         _buildTabButton('로그인', true),
@@ -240,7 +242,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
               const SizedBox(height: 30),
 
-              // 소셜 로그인 구분선
               Row(
                 children: [
                   const Expanded(child: Divider()),
@@ -253,22 +254,21 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: 30),
 
-              // 🟡 카카오 로그인 버튼
               SizedBox(
                 width: double.infinity,
                 height: 50,
                 child: ElevatedButton(
                   onPressed: _kakaoLogin,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFFEE500), // 카카오 노란색
-                    foregroundColor: const Color(0xFF191919), // 카카오 검은색
+                    backgroundColor: const Color(0xFFFEE500),
+                    foregroundColor: const Color(0xFF191919),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     elevation: 0,
                   ),
                   child: const Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.chat_bubble, size: 20), // 카카오 아이콘 대용
+                      Icon(Icons.chat_bubble, size: 20),
                       SizedBox(width: 10),
                       Text('카카오로 시작하기', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                     ],
