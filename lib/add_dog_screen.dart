@@ -40,9 +40,10 @@ class _AddDogScreenState extends State<AddDogScreen> {
   Future<void> _pickImage(ImageSource source) async {
     try {
       final XFile? pickedFile = await _picker.pickImage(
-        source: source,
-        maxWidth: 600,
-        imageQuality: 80,
+        source: ImageSource.gallery,
+        maxWidth: 1024, // 1. 너비 제한 (너무 큰 사진 방지)
+        maxHeight: 1024, // 2. 높이 제한
+        imageQuality: 70, // 3. 화질 70%로 압축
       );
       if (pickedFile != null) {
         setState(() {

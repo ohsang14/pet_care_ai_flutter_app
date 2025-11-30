@@ -3,10 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:kakao_flutter_sdk/kakao_flutter_sdk.dart';
-import 'package:mypet/service/storage_service.dart';
-import '../app_config.dart';
+import 'package:url_launcher/url_launcher.dart'; // 👈 [추가] 약관 링크용 패키지
+import 'package:mypet/service/storage_service.dart'; // 👈 [추가] 자동 로그인용
+import 'app_config.dart';
 import 'main_screen.dart';
-import '../models/member.dart';
+import 'models/member.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -22,6 +23,23 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
+
+  // 🔗 [추가] URL 열기 함수 (이용약관/개인정보)
+  Future<void> _launchUrl(String urlString) async {
+    try {
+      final Uri url = Uri.parse(urlString);
+      if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+        throw Exception('Could not launch $url');
+      }
+    } catch (e) {
+      print('URL 열기 실패: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('페이지를 열 수 없습니다.')),
+        );
+      }
+    }
+  }
 
   // 📧 이메일 로그인
   Future<void> _emailLogin() async {
@@ -45,7 +63,7 @@ class _LoginScreenState extends State<LoginScreen> {
         final responseData = jsonDecode(utf8.decode(response.bodyBytes));
         final member = Member.fromJson(responseData);
 
-        // ⭐️ [추가됨] 이메일 로그인도 정보를 기기에 저장 (자동 로그인용)
+        // ⭐️ [중요] 로그인 성공 시 기기에 정보 저장 (자동 로그인)
         await StorageService.saveMember(member);
 
         Navigator.pushReplacement(
@@ -151,6 +169,7 @@ class _LoginScreenState extends State<LoginScreen> {
         final responseData = jsonDecode(utf8.decode(response.bodyBytes));
         final member = Member.fromJson(responseData);
 
+        // ⭐️ [중요] 카카오 로그인도 기기에 정보 저장
         await StorageService.saveMember(member);
 
         Navigator.pushReplacement(
@@ -275,6 +294,25 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
               ),
+
+              const SizedBox(height: 40), // 하단 여백 확보
+
+              // ⚖️ [추가됨] 이용약관 및 개인정보 처리방침 (앱스토어 필수)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  TextButton(
+                    onPressed: () => _launchUrl('https://policies.google.com/terms'), // TODO: 실제 약관 URL로 변경
+                    child: Text('이용약관', style: TextStyle(color: Colors.grey[600], fontSize: 12)),
+                  ),
+                  Text('|', style: TextStyle(color: Colors.grey[400], fontSize: 12)),
+                  TextButton(
+                    onPressed: () => _launchUrl('https://policies.google.com/privacy'), // TODO: 실제 개인정보 처리방침 URL로 변경
+                    child: Text('개인정보 처리방침', style: TextStyle(color: Colors.grey[600], fontSize: 12)),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
             ],
           ),
         ),
