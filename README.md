@@ -1,6 +1,6 @@
 # 🐾 PetCare AI (반려견 품종 분석 및 건강 관리 플랫폼)
 
-<img width="2048" height="2048" alt="Gemini_Generated_Image_ewaxy2ewaxy2ewax" src="https://github.com/user-attachments/assets/d0c7aa98-5236-4a0e-abd8-e8939bd0108d" />
+<img width="512" height="512" alt="Gemini_Generated_Image_ewaxy2ewaxy2ewax" src="https://github.com/user-attachments/assets/d0c7aa98-5236-4a0e-abd8-e8939bd0108d" />
 
 > **"사진 한 장으로 시작하는 우리 강아지 맞춤 주치의"**
 > 
@@ -10,7 +10,7 @@
 <br>
 
 ## 📅 프로젝트 기간 및 인원
-* **기간:** 202X.XX ~ 202X.XX (약 X주)
+* **기간:** 2025.09 ~ 2025.12 (약 12주)
 * **인원:** 1인 개발 (Full-Stack)
 
 <br>
@@ -30,7 +30,7 @@
 ## 🏗 System Architecture
 **단일 EC2 인스턴스 내 이종 서버(Spring + Flask) 통합 아키텍처**
 
-![System Architecture]([여기에_아까_만든_아키텍처_다이어그램_이미지_링크])
+![<img width="1934" height="910" alt="image" src="https://github.com/user-attachments/assets/96513b9c-cb66-4ba3-871b-d553a05239cc" />
 * **Efficient Resource Management:** 비용 절감을 위해 AWS t2.micro 프리티어 환경 내에서 Spring Boot(8080)와 Flask(5000)를 동시에 구동.
 * **Direct Image Transfer:** 이미지 전송 시 Spring을 거치지 않고 **App ➡️ Flask**로 직접 전송하여 대역폭 낭비 최소화.
 
@@ -52,7 +52,8 @@
     1. **OS 레벨:** 리눅스 **Swap Memory 2GB**를 할당하여 가상 메모리 공간 확보.
     2. **App 레벨:** Spring Boot 실행 시 **JVM Heap Size를 400MB로 제한**(`-Xmx400m`)하여 메모리 점유율 통제.
 * **결과(Result):** 추가 비용 없이 두 개의 서버 프로세스를 24시간 안정적으로 가동 성공.
-  > ![Memory Optimization]([여기에_htop_캡처_이미지])
+<img width="300" height="320" alt="image" src="https://github.com/user-attachments/assets/2bb24b72-3a19-4c54-be81-b2fd86da30ec" />
+
 
 ### 2. 고해상도 이미지 전송 속도 90% 개선
 * **문제(Problem):** 스마트폰 고화질 사진(약 5MB) 전송 시 업로드 지연 발생.
@@ -70,4 +71,4 @@
 
 ## 📞 Contact
 * **Email:** ohsanghyun14@gmail.com
-* **GitHub:** [본인 깃허브 주소]
+* **GitHub:** https://github.com/ohsang14
