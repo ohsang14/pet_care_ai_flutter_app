@@ -17,6 +17,7 @@
 
 ## 🛠 Tech Stack
 
+
 | 분류 | 기술 스택 |
 | :--- | :--- |
 | **Frontend** | ![Flutter](https://img.shields.io/badge/Flutter-02569B?style=flat&logo=flutter&logoColor=white) **Dart** |
@@ -31,7 +32,7 @@
 
 | 메인 및 로그인 | AI 품종 분석 (핵심) | 건강 관리 차트 |
 | :---: | :---: | :---: |
-| ![Login]([로그인_GIF_링크]) | ![Analysis]([분석_GIF_링크]) | ![Chart]([차트_GIF_링크]) |
+| ![Login](https://github.com/user-attachments/assets/b36bd741-d81d-47c3-b2bc-234716d207a4) | ![Analysis]([분석_GIF_링크]) | ![Chart]([차트_GIF_링크]) |
 | 카카오 로그인 및<br>메인 화면 진입 | 사진 촬영 후<br>MobileNetV2 분석 결과 | 문진표 데이터 기반<br>건강 추이 그래프 |
 
 
