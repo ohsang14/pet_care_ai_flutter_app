@@ -27,10 +27,19 @@
 
 <br>
 
+## 📱 Service Demo (시연 화면)
+
+| 메인 및 로그인 | AI 품종 분석 (핵심) | 건강 관리 차트 |
+| :---: | :---: | :---: |
+| ![Login]([로그인_GIF_링크]) | ![Analysis]([분석_GIF_링크]) | ![Chart]([차트_GIF_링크]) |
+| 카카오 로그인 및<br>메인 화면 진입 | 사진 촬영 후<br>MobileNetV2 분석 결과 | 문진표 데이터 기반<br>건강 추이 그래프 |
+
+
+
 ## 🏗 System Architecture
 **단일 EC2 인스턴스 내 이종 서버(Spring + Flask) 통합 아키텍처**
 
-![<img width="1934" height="910" alt="image" src="https://github.com/user-attachments/assets/96513b9c-cb66-4ba3-871b-d553a05239cc" />
+<img width="1934" height="910" alt="image" src="https://github.com/user-attachments/assets/96513b9c-cb66-4ba3-871b-d553a05239cc" />
 * **Efficient Resource Management:** 비용 절감을 위해 AWS t2.micro 프리티어 환경 내에서 Spring Boot(8080)와 Flask(5000)를 동시에 구동.
 * **Direct Image Transfer:** 이미지 전송 시 Spring을 거치지 않고 **App ➡️ Flask**로 직접 전송하여 대역폭 낭비 최소화.
 
