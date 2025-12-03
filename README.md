@@ -32,7 +32,7 @@
 
 | 메인 및 로그인 | AI 품종 분석 (핵심) | 건강 관리 차트 |
 | :---: | :---: | :---: |
-| ![Login](https://github.com/user-attachments/assets/b36bd741-d81d-47c3-b2bc-234716d207a4) | ![Analysis]([분석_GIF_링크]) | ![Chart]([차트_GIF_링크]) |
+| <video src="https://github.com/user-attachments/assets/b36bd741-d81d-47c3-b2bc-234716d207a4" controls width="100%"></video> | <video src="[분석_영상_주소]" controls width="100%"></video> | <video src="[차트_영상_주소]" controls width="100%"></video> |
 | 카카오 로그인 및<br>메인 화면 진입 | 사진 촬영 후<br>MobileNetV2 분석 결과 | 문진표 데이터 기반<br>건강 추이 그래프 |
 
 
