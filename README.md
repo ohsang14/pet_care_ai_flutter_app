@@ -1,9 +1,9 @@
 # 🐾 PetCare AI (반려견 품종 분석 및 건강 관리 플랫폼)
 
-<img width="512" height="512" alt="Gemini_Generated_Image_ewaxy2ewaxy2ewax" src="https://github.com/user-attachments/assets/d0c7aa98-5236-4a0e-abd8-e8939bd0108d" />
+<img width="256" height="256" alt="Gemini_Generated_Image_ewaxy2ewaxy2ewax" src="https://github.com/user-attachments/assets/d0c7aa98-5236-4a0e-abd8-e8939bd0108d" />
 
 > **"사진 한 장으로 시작하는 우리 강아지 맞춤 주치의"**
-> 
+>
 > 딥러닝(MobileNetV2)을 활용한 실시간 견종 분석과 생애 주기별 건강 관리를 제공하는 **Full-Stack 모바일 플랫폼**입니다.
 > 기획부터 디자인, AI 모델 서빙, 백엔드 구축, AWS 인프라 배포까지 **1인 개발**로 수행했습니다.
 
@@ -39,8 +39,8 @@
 **단일 EC2 인스턴스 내 이종 서버(Spring + Flask) 통합 아키텍처**
 
 <img width="1934" height="910" alt="image" src="https://github.com/user-attachments/assets/96513b9c-cb66-4ba3-871b-d553a05239cc" />
-* **Efficient Resource Management:** 비용 절감을 위해 AWS t2.micro 프리티어 환경 내에서 Spring Boot(8080)와 Flask(5000)를 동시에 구동.
-* **Direct Image Transfer:** 이미지 전송 시 Spring을 거치지 않고 **App ➡️ Flask**로 직접 전송하여 대역폭 낭비 최소화.
+ Efficient Resource Management: 비용 절감을 위해 AWS t2.micro 프리티어 환경 내에서 Spring Boot(8080)와 Flask(5000)를 동시에 구동.
+Direct Image Transfer:  이미지 전송 시 Spring을 거치지 않고  App  ➡  Flask로 직접 전송하여 대역폭 낭비 최소화.
 
 <br>
 
@@ -60,7 +60,7 @@
     1. **OS 레벨:** 리눅스 **Swap Memory 2GB**를 할당하여 가상 메모리 공간 확보.
     2. **App 레벨:** Spring Boot 실행 시 **JVM Heap Size를 400MB로 제한**(`-Xmx400m`)하여 메모리 점유율 통제.
 * **결과(Result):** 추가 비용 없이 두 개의 서버 프로세스를 24시간 안정적으로 가동 성공.
-<img width="300" height="320" alt="image" src="https://github.com/user-attachments/assets/2bb24b72-3a19-4c54-be81-b2fd86da30ec" />
+  <img width="300" height="320" alt="image" src="https://github.com/user-attachments/assets/2bb24b72-3a19-4c54-be81-b2fd86da30ec" />
 
 
 ### 2. 고해상도 이미지 전송 속도 90% 개선
