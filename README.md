@@ -1,6 +1,7 @@
 # 🐾 PetCare AI (반려견 품종 분석 및 건강 관리 플랫폼)
 
-<img width="256" height="256" alt="Gemini_Generated_Image_ewaxy2ewaxy2ewax" src="https://github.com/user-attachments/assets/d0c7aa98-5236-4a0e-abd8-e8939bd0108d" />
+<img width="256" height="256" alt="image" src="https://github.com/user-attachments/assets/18c64887-4aa6-4efb-acba-9d0ca684a0c3" />
+
 
 > **"사진 한 장으로 시작하는 우리 강아지 맞춤 주치의"**
 >
