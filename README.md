@@ -50,32 +50,7 @@ Direct Image Transfer:  이미지 전송 시 Spring을 거치지 않고  App  �
 * **🔐 보안 로그인:** Kakao OAuth2 및 Secure Storage 적용으로 안전한 자동 로그인 구현.
 * **🧹 데이터 무결성:** 회원 탈퇴 시 연관 데이터(반려견, 기록) Cascade(연쇄) 삭제 처리.
 
-<br>
 
-## 🚀 Troubleshooting & Performance (핵심 성과)
-
-### 1. AWS EC2 프리티어 메모리 부족(OOM) 해결
-* **문제(Problem):** t2.micro(RAM 1GB)에서 Java(Spring)와 Python(Flask) 동시 실행 시 메모리 부족으로 서버가 멈추는(Freezing) 현상 발생.
-* **해결(Action):**
-    1. **OS 레벨:** 리눅스 **Swap Memory 2GB**를 할당하여 가상 메모리 공간 확보.
-    2. **App 레벨:** Spring Boot 실행 시 **JVM Heap Size를 400MB로 제한**(`-Xmx400m`)하여 메모리 점유율 통제.
-* **결과(Result):** 추가 비용 없이 두 개의 서버 프로세스를 24시간 안정적으로 가동 성공.
-  <img width="300" height="320" alt="image" src="https://github.com/user-attachments/assets/2bb24b72-3a19-4c54-be81-b2fd86da30ec" />
-
-
-### 2. 고해상도 이미지 전송 속도 90% 개선
-* **문제(Problem):** 스마트폰 고화질 사진(약 5MB) 전송 시 업로드 지연 발생.
-* **해결(Action):** 클라이언트(Flutter) 단에서 `image_picker`의 `imageQuality: 70` 옵션을 적용하여 전송 전 압축 수행.
-* **결과(Result):** 이미지 용량을 평균 **300KB(94% 감소)**로 줄이면서도 AI 분석 정확도는 유지, 전송 속도 2배 이상 향상.
-
-<br>
-
-## 💭 Retrospective (회고)
-* **이종 언어 통합 경험:** Java의 안정성과 Python의 AI 라이브러리 강점을 결합하기 위해 API 통신 규격을 설계하며 **마이크로 서비스 구조**에 대한 이해도를 높였습니다.
-* **인프라 최적화:** 제한된 클라우드 자원 안에서 서비스를 운영하기 위해 OS(Linux)와 JVM 메모리 구조를 깊이 있게 학습하는 계기가 되었습니다.
-* **향후 계획:** 현재 로컬 스토리지에 저장되는 이미지 캐싱 전략을 개선하여 리스트 로딩 속도를 더욱 높일 예정입니다.
-
-<br>
 
 ## 📞 Contact
 * **Email:** ohsanghyun14@gmail.com
