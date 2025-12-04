@@ -27,13 +27,11 @@
 | **Infra** | ![AWS](https://img.shields.io/badge/AWS%20EC2-232F3E?style=flat&logo=amazon-aws&logoColor=white) Ubuntu 24.04 LTS |
 
 <br>
-
 ## 📱 Service Demo (시연 화면)
 
 | 메인 및 로그인 | AI 품종 분석 (핵심) | 건강 관리 차트 |
 | :---: | :---: | :---: |
-| ![로그인 ](https://github.com/user-attachments/assets/02ecb81e-4c59-432a-b2d9-8a601c6a92cd)
- | ![Analysis](여기에_아까_복사한_GIF_링크_붙여넣기) | <video src="[차트_영상_주소]" controls width="100%"></video> |
+| <img src="https://github.com/user-attachments/assets/3f000d8e-01c4-48cc-abf3-845c495c1f90" height="500"/> | <img src="https://github.com/user-attachments/assets/0acd50e9-baf0-40c5-afcc-cdfceed839f1" height="500"/> | <img src="https://github.com/user-attachments/assets/81ea3aaf-2966-4752-9f94-09c662c3c6b9" height="500"/> |
 | 카카오 로그인 및<br>메인 화면 진입 | 사진 촬영 후<br>MobileNetV2 분석 결과 | 문진표 데이터 기반<br>건강 추이 그래프 |
 
 
